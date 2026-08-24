@@ -1,0 +1,41 @@
+# Lint configuration for maintaining the skill.
+#
+# Pinned deliberately. With no config file ruff enables its full rule set
+# (400+ rules), so a ruff upgrade can start flagging unrelated things and the
+# lint result depends on which ruff you happen to have installed.
+#
+# Both `ruff check` and `ruff format` are run on every file here:
+#     .venv/bin/ruff check --fix . && .venv/bin/ruff format .
+#
+# Multi-line explanations sit ABOVE the thing they describe, never as aligned
+# continuations of a trailing comment. The formatter flushes a continuation
+# comment to column 0, where it reads as belonging to the next statement, so
+# the leading-block form is the one that survives.
+
+line-length = 88
+target-version = "py310"     # SKILL.md states Python 3.10+
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes — real bugs: unused imports, undefined names
+    "I",    # import sorting
+    "UP",   # pyupgrade — keep syntax current with target-version
+    "B",    # bugbear — likely-wrong constructs
+]
+ignore = [
+    "E741",  # Ambiguous variable names (l, I, O). Geometry code uses short
+             # names deliberately.
+]
+
+[lint.per-file-ignores]
+# Tests add the skill's directories to sys.path before importing the modules
+# under test, so their imports cannot sit at the top of the file.
+"tests/*" = ["E402"]
+
+[lint.isort]
+# This codebase separates the import block from the first banner comment with
+# two blank lines. ruff's default ("auto") collapses that to one where a
+# comment follows rather than a def, so it is pinned.
+lines-after-imports = 2

@@ -21,6 +21,7 @@ diagram sources and rendered PNGs in different directories. It names ONE
 file, so it takes exactly one input .drawio (missing parent directories
 are created).
 """
+
 import shutil
 import subprocess
 import sys
@@ -100,8 +101,13 @@ def render(drawio_path: Path, cli: str, out_path: Path | None = None) -> bool:
     out_path = Path(out_path) if out_path else drawio_path.with_suffix(".png")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
-        cli, "--export", "--format", "png",
-        "--output", str(out_path), str(drawio_path),
+        cli,
+        "--export",
+        "--format",
+        "png",
+        "--output",
+        str(out_path),
+        str(drawio_path),
     ]
     print(f"  → {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -127,8 +133,7 @@ def main():
     cli = find_drawio_cli()
     if cli is None:
         print("ERROR: drawio CLI not found on PATH.")
-        print("Install from: "
-              "https://github.com/jgraph/drawio-desktop/releases")
+        print("Install from: https://github.com/jgraph/drawio-desktop/releases")
         sys.exit(1)
     print(f"Using drawio CLI: {cli}\n")
 

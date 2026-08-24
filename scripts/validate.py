@@ -60,6 +60,7 @@ Usage:
 Returns a list of violations as strings; exits with non-zero if any
 violations are found.
 """
+
 from __future__ import annotations
 
 import sys
@@ -73,21 +74,26 @@ from dataclasses import dataclass
 # offsets, strokeWidth 1-3). Tighten them for denser diagrams; loosen them
 # if legitimate corner-touches or intentional parallel edges trip the checks.
 # --------------------------------------------------------------------------
-EDGE_BUFFER = 2.0          # px inside a box edge that still counts as
-                           # "interior" for the CROSSING check. Keeps an
-                           # edge that grazes a box border from false-firing.
-ORTHO_TOL = 1.5            # px perpendicular tolerance for treating a
-                           # segment as axis-aligned, and for treating two
-                           # segments as collinear. Absorbs half-pixel anchor
-                           # rounding. Two parallel edges must sit >ORTHO_TOL
-                           # apart on the minor axis to be seen as distinct.
-MIN_OVERLAP = 8.0          # px two collinear segments must share before
-                           # OVERLAP fires. Below this they're treated as a
-                           # shared corner/waypoint, not a routing collision.
-TITLE_BAND_HEIGHT = 28.0   # px from a container's top edge treated as its
-                           # title text band for the TEXT_OVERLAP check.
-                           # Covers fontSize up to ~18 plus spacingTop.
-TITLE_EDGE_BUFFER = 1.0    # px inset for the container title-band check.
+# px inside a box edge that still counts as "interior" for the CROSSING
+# check. Keeps an edge that grazes a box border from false-firing.
+EDGE_BUFFER = 2.0
+
+# px perpendicular tolerance for treating a segment as axis-aligned, and for
+# treating two segments as collinear. Absorbs half-pixel anchor rounding. Two
+# parallel edges must sit >ORTHO_TOL apart on the minor axis to be seen as
+# distinct.
+ORTHO_TOL = 1.5
+
+# px two collinear segments must share before OVERLAP fires. Below this
+# they're treated as a shared corner/waypoint, not a routing collision.
+MIN_OVERLAP = 8.0
+
+# px from a container's top edge treated as its title text band for the
+# TEXT_OVERLAP check. Covers fontSize up to ~18 plus spacingTop.
+TITLE_BAND_HEIGHT = 28.0
+
+# px inset for the container title-band check.
+TITLE_EDGE_BUFFER = 1.0
 
 # Label bounding-box estimation (LABEL_OVERLAP). Width is char-count based;
 # calibrated for Latin sans-serif at fontSize 10. CJK / styled HTML labels
@@ -96,23 +102,22 @@ LABEL_PER_CHAR_PX = 5.5
 LABEL_LINE_HEIGHT = 16.0
 LABEL_X_PAD = 10.0
 LABEL_Y_PAD = 4.0
-LABEL_BOX_MIN_OVERLAP = 8.0  # px on the shorter axis; an edge-label/box
-                             # overlap smaller than this is treated as a
-                             # graze (edge labels carry an opaque white
-                             # background that masks small overlaps) and is
-                             # not flagged by LABEL_BOX_OVERLAP.
-CONTAINMENT_MARGIN = 1.0     # px slack when deciding whether a box sits
-                             # inside a container (TEXT_OVERLAP entry
-                             # exemption). Absorbs half-pixel authoring
-                             # arithmetic on a box flush with a zone edge.
+# px on the shorter axis; an edge-label/box overlap smaller than this is
+# treated as a graze (edge labels carry an opaque white background that masks
+# small overlaps) and is not flagged by LABEL_BOX_OVERLAP.
+LABEL_BOX_MIN_OVERLAP = 8.0
+
+# px slack when deciding whether a box sits inside a container (TEXT_OVERLAP
+# entry exemption). Absorbs half-pixel authoring arithmetic on a box flush
+# with a zone edge.
+CONTAINMENT_MARGIN = 1.0
 
 # Severity tiers. Hard errors fail the build (non-zero exit); warnings are
 # advisory — they surface a real but often-tolerable issue (a route the
 # validator can't fully verify, a label sitting over an unrelated box that
 # its white background usually masks, or a label estimated slightly wider
 # than its own edge) without blocking.
-ERROR_CHECKS = {"CROSSING", "OVERLAP", "TEXT_OVERLAP", "LABEL_OVERLAP",
-                "DANGLING"}
+ERROR_CHECKS = {"CROSSING", "OVERLAP", "TEXT_OVERLAP", "LABEL_OVERLAP", "DANGLING"}
 WARNING_CHECKS = {"DIAGONAL", "LABEL_BOX_OVERLAP", "SHORT_LABELLED_EDGE"}
 
 
@@ -134,9 +139,12 @@ class Box:
     is_container: bool
 
     @property
-    def x2(self): return self.x + self.w
+    def x2(self):
+        return self.x + self.w
+
     @property
-    def y2(self): return self.y + self.h
+    def y2(self):
+        return self.y + self.h
 
     def anchor(self, ex: float, ey: float) -> tuple[float, float]:
         """Compute absolute (x,y) of an exit/entry point given relative
@@ -144,8 +152,10 @@ class Box:
         return (self.x + ex * self.w, self.y + ey * self.h)
 
     def contains_point(self, x: float, y: float, margin: float = 0) -> bool:
-        return (self.x - margin <= x <= self.x2 + margin
-                and self.y - margin <= y <= self.y2 + margin)
+        return (
+            self.x - margin <= x <= self.x2 + margin
+            and self.y - margin <= y <= self.y2 + margin
+        )
 
 
 @dataclass
@@ -203,8 +213,7 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
             # dashed too, but they use verticalAlign=middle, so they don't
             # match here.
             is_container = (
-                style_d.get("dashed") == "1"
-                and style_d.get("verticalAlign") == "top"
+                style_d.get("dashed") == "1" and style_d.get("verticalAlign") == "top"
             )
             label = (cell.get("value") or "")[:60]
             boxes[cid] = Box(cid, label, x, y, w, h, is_container)
@@ -220,39 +229,38 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
                 arr = geom.find("Array")
                 if arr is not None:
                     for pt in arr.findall("mxPoint"):
-                        waypoints.append((float(pt.get("x")),
-                                          float(pt.get("y"))))
+                        waypoints.append((float(pt.get("x")), float(pt.get("y"))))
                 # Top-level mxPoints: label offset and fixed source/target
                 # endpoints (point-anchored edges from draw.io Desktop).
                 for pt in geom.findall("mxPoint"):
                     role = pt.get("as")
                     if role == "offset":
-                        label_offset = (float(pt.get("x", 0)),
-                                        float(pt.get("y", 0)))
+                        label_offset = (float(pt.get("x", 0)), float(pt.get("y", 0)))
                     elif role == "sourcePoint":
-                        src_point = (float(pt.get("x", 0)),
-                                     float(pt.get("y", 0)))
+                        src_point = (float(pt.get("x", 0)), float(pt.get("y", 0)))
                     elif role == "targetPoint":
-                        dst_point = (float(pt.get("x", 0)),
-                                     float(pt.get("y", 0)))
-            edges.append(Edge(
-                cid, cell.get("source"), cell.get("target"),
-                float(ex) if ex else None,
-                float(ey) if ey else None,
-                float(entryX) if entryX else None,
-                float(entryY) if entryY else None,
-                waypoints,
-                cell.get("value") or "",
-                style_d.get("strokeColor", ""),
-                label_offset,
-                src_point,
-                dst_point,
-            ))
+                        dst_point = (float(pt.get("x", 0)), float(pt.get("y", 0)))
+            edges.append(
+                Edge(
+                    cid,
+                    cell.get("source"),
+                    cell.get("target"),
+                    float(ex) if ex else None,
+                    float(ey) if ey else None,
+                    float(entryX) if entryX else None,
+                    float(entryY) if entryY else None,
+                    waypoints,
+                    cell.get("value") or "",
+                    style_d.get("strokeColor", ""),
+                    label_offset,
+                    src_point,
+                    dst_point,
+                )
+            )
     return boxes, edges
 
 
-def _anchor_travels_horizontally(ex: float | None,
-                                 ey: float | None) -> bool | None:
+def _anchor_travels_horizontally(ex: float | None, ey: float | None) -> bool | None:
     """Which way does an edge leave/meet a box at anchor (ex, ey)?
 
     draw.io's orthogonalEdgeStyle exits perpendicular to the box edge the
@@ -305,15 +313,19 @@ def edge_polyline(edge: Edge, boxes: dict[str, Box]) -> list[tuple[float, float]
     # Resolve each endpoint to a coordinate: a connected cell's anchor/centre,
     # or — for a point-anchored edge — its fixed sourcePoint/targetPoint.
     if src is not None:
-        a = (src.anchor(edge.exitX, edge.exitY)
-             if edge.exitX is not None and edge.exitY is not None
-             else (src.x + src.w / 2, src.y + src.h / 2))
+        a = (
+            src.anchor(edge.exitX, edge.exitY)
+            if edge.exitX is not None and edge.exitY is not None
+            else (src.x + src.w / 2, src.y + src.h / 2)
+        )
     else:
         a = edge.src_point
     if dst is not None:
-        b = (dst.anchor(edge.entryX, edge.entryY)
-             if edge.entryX is not None and edge.entryY is not None
-             else (dst.x + dst.w / 2, dst.y + dst.h / 2))
+        b = (
+            dst.anchor(edge.entryX, edge.entryY)
+            if edge.entryX is not None and edge.entryY is not None
+            else (dst.x + dst.w / 2, dst.y + dst.h / 2)
+        )
     else:
         b = edge.dst_point
     if a is None or b is None:
@@ -324,8 +336,9 @@ def edge_polyline(edge: Edge, boxes: dict[str, Box]) -> list[tuple[float, float]
     return pts
 
 
-def edge_label_center(edge: Edge,
-                      poly: list[tuple[float, float]]) -> tuple[float, float]:
+def edge_label_center(
+    edge: Edge, poly: list[tuple[float, float]]
+) -> tuple[float, float]:
     """Estimate the absolute position of the edge label.
 
     draw.io places labels at the polyline's geometric center (midpoint of
@@ -345,13 +358,16 @@ def edge_label_center(edge: Edge,
             longest = (a, b)
     a, b = longest
     mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-    return (mid[0] + edge.label_offset[0],
-            mid[1] + edge.label_offset[1])
+    return (mid[0] + edge.label_offset[0], mid[1] + edge.label_offset[1])
 
 
 _LABEL_ENTITIES = {
-    "&nbsp;": " ", "&amp;": "&", "&lt;": "<",
-    "&gt;": ">", "&quot;": '"', "&#39;": "'",
+    "&nbsp;": " ",
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
 }
 
 
@@ -377,7 +393,7 @@ def normalise_label(label: str) -> list[str]:
             gt = cleaned.find(">", lt)
             if gt == -1:
                 break
-            cleaned = cleaned[:lt] + cleaned[gt + 1:]
+            cleaned = cleaned[:lt] + cleaned[gt + 1 :]
         for k, v in _LABEL_ENTITIES.items():
             cleaned = cleaned.replace(k, v)
         out_lines.append(cleaned)
@@ -402,11 +418,14 @@ def endpoint_label(boxes: dict, cell_id) -> str:
     return short_label(b.label) if b is not None else "(point)"
 
 
-def label_bbox(center: tuple[float, float], label: str,
-               per_char_px: float = LABEL_PER_CHAR_PX,
-               line_height: float = LABEL_LINE_HEIGHT,
-               x_pad: float = LABEL_X_PAD,
-               y_pad: float = LABEL_Y_PAD) -> tuple[float, float, float, float]:
+def label_bbox(
+    center: tuple[float, float],
+    label: str,
+    per_char_px: float = LABEL_PER_CHAR_PX,
+    line_height: float = LABEL_LINE_HEIGHT,
+    x_pad: float = LABEL_X_PAD,
+    y_pad: float = LABEL_Y_PAD,
+) -> tuple[float, float, float, float]:
     """Estimate a label's bounding box (x1, y1, x2, y2) centred on `center`.
 
     Width is char-count based (5.5 px/char @ font 10); height is line-count
@@ -420,20 +439,25 @@ def label_bbox(center: tuple[float, float], label: str,
     return (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
 
 
-def rects_overlap(r1: tuple[float, float, float, float],
-                  r2: tuple[float, float, float, float]) -> bool:
+def rects_overlap(
+    r1: tuple[float, float, float, float], r2: tuple[float, float, float, float]
+) -> bool:
     """Return True if two (x1, y1, x2, y2) rectangles intersect."""
     x1a, y1a, x1b, y1b = r1
     x2a, y2a, x2b, y2b = r2
     return not (x1b < x2a or x2b < x1a or y1b < y2a or y2b < y1a)
 
 
-def labels_overlap(c1: tuple[float, float], label1: str,
-                   c2: tuple[float, float], label2: str,
-                   per_char_px: float = LABEL_PER_CHAR_PX,
-                   line_height: float = LABEL_LINE_HEIGHT,
-                   x_pad: float = LABEL_X_PAD,
-                   y_pad: float = LABEL_Y_PAD) -> bool:
+def labels_overlap(
+    c1: tuple[float, float],
+    label1: str,
+    c2: tuple[float, float],
+    label2: str,
+    per_char_px: float = LABEL_PER_CHAR_PX,
+    line_height: float = LABEL_LINE_HEIGHT,
+    x_pad: float = LABEL_X_PAD,
+    y_pad: float = LABEL_Y_PAD,
+) -> bool:
     """Return True if two label bounding boxes overlap."""
     if not label1.strip() or not label2.strip():
         return False
@@ -448,19 +472,22 @@ def segments(polyline: list[tuple[float, float]]):
         yield polyline[i], polyline[i + 1]
 
 
-def segment_is_orthogonal(a: tuple[float, float], b: tuple[float, float],
-                          ortho_tol: float = ORTHO_TOL) -> bool:
+def segment_is_orthogonal(
+    a: tuple[float, float], b: tuple[float, float], ortho_tol: float = ORTHO_TOL
+) -> bool:
     """Return True if the segment is horizontal or vertical (within
     ortho_tol). A False here means the segment is diagonal — the validator
     can't reason about draw.io's real orthogonal route for it."""
     return abs(a[0] - b[0]) <= ortho_tol or abs(a[1] - b[1]) <= ortho_tol
 
 
-def segment_crosses_box(a: tuple[float, float],
-                        b: tuple[float, float],
-                        box: Box,
-                        edge_buffer: float = EDGE_BUFFER,
-                        ortho_tol: float = ORTHO_TOL) -> bool:
+def segment_crosses_box(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    box: Box,
+    edge_buffer: float = EDGE_BUFFER,
+    ortho_tol: float = ORTHO_TOL,
+) -> bool:
     """Return True if the segment from a to b passes through the
     interior of the box. Treats near-orthogonal segments (delta ≤
     ortho_tol on the minor axis) as orthogonal — this catches cases
@@ -491,26 +518,28 @@ def segment_crosses_box(a: tuple[float, float],
     return False
 
 
-def segments_overlap(s1: tuple, s2: tuple,
-                     min_overlap: float = MIN_OVERLAP,
-                     ortho_tol: float = ORTHO_TOL) -> bool:
+def segments_overlap(
+    s1: tuple, s2: tuple, min_overlap: float = MIN_OVERLAP, ortho_tol: float = ORTHO_TOL
+) -> bool:
     """Return True if two near-orthogonal segments lie on the same line
     (within ortho_tol) and overlap for at least `min_overlap` units."""
     (a1, b1), (a2, b2) = s1, s2
     # Both horizontal (y nearly constant within each, and roughly equal)
-    if (abs(a1[1] - b1[1]) <= ortho_tol
-            and abs(a2[1] - b2[1]) <= ortho_tol
-            and abs(((a1[1] + b1[1]) / 2) - ((a2[1] + b2[1]) / 2))
-            <= ortho_tol):
+    if (
+        abs(a1[1] - b1[1]) <= ortho_tol
+        and abs(a2[1] - b2[1]) <= ortho_tol
+        and abs(((a1[1] + b1[1]) / 2) - ((a2[1] + b2[1]) / 2)) <= ortho_tol
+    ):
         x1, x2 = sorted((a1[0], b1[0]))
         x3, x4 = sorted((a2[0], b2[0]))
         overlap = min(x2, x4) - max(x1, x3)
         return overlap >= min_overlap
     # Both vertical
-    if (abs(a1[0] - b1[0]) <= ortho_tol
-            and abs(a2[0] - b2[0]) <= ortho_tol
-            and abs(((a1[0] + b1[0]) / 2) - ((a2[0] + b2[0]) / 2))
-            <= ortho_tol):
+    if (
+        abs(a1[0] - b1[0]) <= ortho_tol
+        and abs(a2[0] - b2[0]) <= ortho_tol
+        and abs(((a1[0] + b1[0]) / 2) - ((a2[0] + b2[0]) / 2)) <= ortho_tol
+    ):
         y1, y2 = sorted((a1[1], b1[1]))
         y3, y4 = sorted((a2[1], b2[1]))
         overlap = min(y2, y4) - max(y1, y3)
@@ -518,20 +547,19 @@ def segments_overlap(s1: tuple, s2: tuple,
     return False
 
 
-def segment_is_vertical(a: tuple[float, float], b: tuple[float, float],
-                        ortho_tol: float = ORTHO_TOL) -> bool:
+def segment_is_vertical(
+    a: tuple[float, float], b: tuple[float, float], ortho_tol: float = ORTHO_TOL
+) -> bool:
     """Return True if the segment runs vertically (within ortho_tol)."""
     return abs(a[0] - b[0]) <= ortho_tol and abs(a[1] - b[1]) > ortho_tol
 
 
 def polyline_length(polyline: list[tuple[float, float]]) -> float:
     """Total rendered length of an orthogonal polyline (manhattan sum)."""
-    return sum(abs(b[0] - a[0]) + abs(b[1] - a[1])
-               for a, b in segments(polyline))
+    return sum(abs(b[0] - a[0]) + abs(b[1] - a[1]) for a, b in segments(polyline))
 
 
-def label_text_width(label: str,
-                     per_char_px: float = LABEL_PER_CHAR_PX) -> float:
+def label_text_width(label: str, per_char_px: float = LABEL_PER_CHAR_PX) -> float:
     """Estimated width of a label's widest text line, WITHOUT the padding
     label_bbox adds. Used by SHORT_LABELLED_EDGE, where the question is
     whether the ink fits on the edge — the padding is breathing room, not
@@ -540,25 +568,26 @@ def label_text_width(label: str,
     return max((len(ln) for ln in plain_lines), default=0) * per_char_px
 
 
-def box_inside(inner: Box, outer: Box,
-               margin: float = CONTAINMENT_MARGIN) -> bool:
+def box_inside(inner: Box, outer: Box, margin: float = CONTAINMENT_MARGIN) -> bool:
     """Return True if `inner` sits geometrically within `outer`'s bounds.
 
     draw.io zones are drawn as siblings (both parent="1") and nest only
     visually, so containment is a geometric question, not a parent-id one.
     """
-    return (inner.x >= outer.x - margin and inner.x2 <= outer.x2 + margin
-            and inner.y >= outer.y - margin and inner.y2 <= outer.y2 + margin)
+    return (
+        inner.x >= outer.x - margin
+        and inner.x2 <= outer.x2 + margin
+        and inner.y >= outer.y - margin
+        and inner.y2 <= outer.y2 + margin
+    )
 
 
-def edge_endpoint_inside(edge: Edge, boxes: dict[str, Box],
-                         container: Box) -> bool:
+def edge_endpoint_inside(edge: Edge, boxes: dict[str, Box], container: Box) -> bool:
     """Return True if either end of `edge` lives inside `container` — a
     connected box within its bounds, or a point-anchored endpoint that
     falls inside it. The container itself doesn't count as its own
     endpoint (that case is already exempted by the src/dst id check)."""
-    for cell_id, point in ((edge.src, edge.src_point),
-                           (edge.dst, edge.dst_point)):
+    for cell_id, point in ((edge.src, edge.src_point), (edge.dst, edge.dst_point)):
         endpoint = boxes.get(cell_id)
         if endpoint is not None:
             if endpoint is not container and box_inside(endpoint, container):
@@ -568,12 +597,14 @@ def edge_endpoint_inside(edge: Edge, boxes: dict[str, Box],
     return False
 
 
-def segment_crosses_container_title(a: tuple[float, float],
-                                    b: tuple[float, float],
-                                    box: Box,
-                                    title_band_height: float = TITLE_BAND_HEIGHT,
-                                    edge_buffer: float = TITLE_EDGE_BUFFER,
-                                    ortho_tol: float = ORTHO_TOL) -> bool:
+def segment_crosses_container_title(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    box: Box,
+    title_band_height: float = TITLE_BAND_HEIGHT,
+    edge_buffer: float = TITLE_EDGE_BUFFER,
+    ortho_tol: float = ORTHO_TOL,
+) -> bool:
     """Return True if the segment crosses the title text band of a
     container box. Containers have their title rendered at the top
     with spacingTop=8 plus ~font-size px. A 28px band from box.y
@@ -643,8 +674,8 @@ def validate(path: str) -> list[str]:
     # Note: we no longer skip "title" or "legend" boxes by hard-coded
     # canvas coordinates; if an edge segment crosses your title bar or
     # legend strip, that's a genuine routing problem worth flagging.
-    for eid, (edge, poly) in edge_lines.items():
-        for (a, b) in segments(poly):
+    for _eid, (edge, poly) in edge_lines.items():
+        for a, b in segments(poly):
             for bid, box in boxes.items():
                 if box.is_container:
                     continue
@@ -666,15 +697,14 @@ def validate(path: str) -> list[str]:
     # pattern) must pierce it. That vertical entry stub is exempt; a
     # segment running ALONG the band still sits on the title text and
     # fires, whether or not its endpoints live in the zone.
-    for eid, (edge, poly) in edge_lines.items():
-        for (a, b) in segments(poly):
+    for _eid, (edge, poly) in edge_lines.items():
+        for a, b in segments(poly):
             for bid, box in boxes.items():
                 if not box.is_container:
                     continue
                 if bid == edge.src or bid == edge.dst:
                     continue
-                if (segment_is_vertical(a, b)
-                        and edge_endpoint_inside(edge, boxes, box)):
+                if segment_is_vertical(a, b) and edge_endpoint_inside(edge, boxes, box):
                     continue
                 if segment_crosses_container_title(a, b, box):
                     src_label = endpoint_label(boxes, edge.src)
@@ -690,7 +720,7 @@ def validate(path: str) -> list[str]:
     seen_pairs = set()
     edge_ids = list(edge_lines.keys())
     for i, e1id in enumerate(edge_ids):
-        for e2id in edge_ids[i + 1:]:
+        for e2id in edge_ids[i + 1 :]:
             e1, poly1 = edge_lines[e1id]
             e2, poly2 = edge_lines[e2id]
             for s1 in segments(poly1):
@@ -707,8 +737,8 @@ def validate(path: str) -> list[str]:
 
     # 2b. Diagonal (non-orthogonal) segments — the reconstructed route is
     # not axis-aligned, so draw.io's real orthogonal auto-route is unchecked.
-    for eid, (edge, poly) in edge_lines.items():
-        for (a, b) in segments(poly):
+    for _eid, (edge, poly) in edge_lines.items():
+        for a, b in segments(poly):
             if a == b:
                 continue
             if not segment_is_orthogonal(a, b):
@@ -725,7 +755,7 @@ def validate(path: str) -> list[str]:
     # 3. Pairs of edge labels with overlapping bounding boxes
     label_seen = set()
     for i, e1id in enumerate(edge_ids):
-        for e2id in edge_ids[i + 1:]:
+        for e2id in edge_ids[i + 1 :]:
             e1, poly1 = edge_lines[e1id]
             e2, poly2 = edge_lines[e2id]
             if not e1.label.strip() or not e2.label.strip():
@@ -753,7 +783,7 @@ def validate(path: str) -> list[str]:
     # Containers are exempt — labels legitimately sit inside zone
     # containers. The edge's own endpoints are exempt too, since a label
     # naturally rests near the boxes it connects.
-    for eid, (edge, poly) in edge_lines.items():
+    for _eid, (edge, poly) in edge_lines.items():
         if not edge.label.strip():
             continue
         c = edge_label_center(edge, poly)
@@ -780,7 +810,7 @@ def validate(path: str) -> list[str]:
     # end — a failure LABEL_BOX_OVERLAP can't see, since it exempts the
     # edge's own endpoints (and each overhang alone is often a sub-8 px
     # graze anyway).
-    for eid, (edge, poly) in edge_lines.items():
+    for _eid, (edge, poly) in edge_lines.items():
         if not edge.label.strip():
             continue
         text_w = label_text_width(edge.label)
@@ -800,13 +830,13 @@ def validate(path: str) -> list[str]:
 
 def main():
     from pathlib import Path
+
     paths = sys.argv[1:]
     if not paths:
         paths = sorted(str(p) for p in Path(".").glob("*.drawio"))
         if not paths:
             print("Usage: python validate.py <file.drawio> [more.drawio ...]")
-            print("       python validate.py     "
-                  "# validate every .drawio in cwd")
+            print("       python validate.py     # validate every .drawio in cwd")
             sys.exit(2)
     total_err = 0
     total_warn = 0

@@ -5,7 +5,9 @@ __pycache__/
 .ruff_cache/
 
 # Local dev environment (see CONTRIBUTING.md)
-.venv/
+# No trailing slash: .venv is a symlink to ~/Python-Envs/<name>, not a
+# directory, and a "dir/" pattern would not match it.
+.venv
 
 # macOS
 .DS_Store

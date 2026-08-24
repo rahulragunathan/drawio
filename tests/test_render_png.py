@@ -5,11 +5,13 @@ the one piece of plumbing that matters: that an explicit --output path
 reaches the CLI invocation. The subprocess call is faked at the system
 boundary so the real render() code path runs without drawio installed.
 """
+
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
 
 SKILL_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
@@ -22,6 +24,7 @@ from render_png import parse_args  # noqa: E402
 # parse_args — accepted forms
 # ----------------------------------------------------------------------
 
+
 def test_no_args_returns_empty_paths():
     """Zero args is the glob-the-cwd mode; main() fills the paths in."""
     assert parse_args([]) == ([], None)
@@ -32,16 +35,18 @@ def test_single_input_without_output():
 
 
 def test_multiple_inputs_without_output():
-    assert parse_args(["a.drawio", "b.drawio"]) == (
-        ["a.drawio", "b.drawio"], None)
+    assert parse_args(["a.drawio", "b.drawio"]) == (["a.drawio", "b.drawio"], None)
 
 
-@pytest.mark.parametrize("argv", [
-    ["a.drawio", "-o", "out.png"],
-    ["a.drawio", "--output", "out.png"],
-    ["a.drawio", "--output=out.png"],
-    ["-o", "out.png", "a.drawio"],          # flag before the input
-])
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["a.drawio", "-o", "out.png"],
+        ["a.drawio", "--output", "out.png"],
+        ["a.drawio", "--output=out.png"],
+        ["-o", "out.png", "a.drawio"],  # flag before the input
+    ],
+)
 def test_output_flag_forms(argv):
     paths, out = parse_args(argv)
     assert paths == ["a.drawio"]
@@ -54,14 +59,18 @@ def test_output_flag_forms(argv):
 # than a silent overwrite of all but the last.
 # ----------------------------------------------------------------------
 
-@pytest.mark.parametrize("argv,expected", [
-    (["a.drawio", "b.drawio", "-o", "out.png"], "exactly one input"),
-    (["-o", "out.png"], "exactly one input"),      # would glob the cwd
-    (["a.drawio", "-o"], "needs a file path"),
-    (["a.drawio", "--output="], "needs a file path"),
-    (["a.drawio", "-o", "x.png", "-o", "y.png"], "more than once"),
-    (["a.drawio", "--frobnicate"], "unknown option"),
-])
+
+@pytest.mark.parametrize(
+    "argv,expected",
+    [
+        (["a.drawio", "b.drawio", "-o", "out.png"], "exactly one input"),
+        (["-o", "out.png"], "exactly one input"),  # would glob the cwd
+        (["a.drawio", "-o"], "needs a file path"),
+        (["a.drawio", "--output="], "needs a file path"),
+        (["a.drawio", "-o", "x.png", "-o", "y.png"], "more than once"),
+        (["a.drawio", "--frobnicate"], "unknown option"),
+    ],
+)
 def test_rejected_invocations(argv, expected):
     with pytest.raises(ValueError, match=expected):
         parse_args(argv)
@@ -71,10 +80,12 @@ def test_rejected_invocations(argv, expected):
 # render — the explicit path must reach the CLI
 # ----------------------------------------------------------------------
 
+
 def _fake_run(recorder):
     def run(cmd, **kwargs):
         recorder.append(cmd)
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
     return run
 
 

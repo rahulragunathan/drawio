@@ -6,31 +6,33 @@ flags only that type. The set comparison guards against accidental
 co-firing — if a CROSSING fixture also trips OVERLAP or LABEL_OVERLAP,
 the fixture is no longer minimal and the test fails loudly.
 """
+
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+
 SKILL_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(SKILL_ROOT / "tests" / "fixtures"))
 
-from validate import validate, normalise_label  # noqa: E402
 from builders import (  # noqa: E402
     build_clean,
-    build_crossing,
-    build_overlap,
-    build_text_overlap,
-    build_label_overlap,
-    build_diagonal,
-    build_dangling,
-    build_stub_clean,
-    build_point_anchored,
     build_container_entry,
-    build_text_overlap_inside,
+    build_crossing,
+    build_dangling,
+    build_diagonal,
+    build_label_overlap,
+    build_overlap,
+    build_point_anchored,
     build_short_labelled_edge,
+    build_stub_clean,
+    build_text_overlap,
+    build_text_overlap_inside,
 )
+from validate import normalise_label, validate  # noqa: E402
 
 
 def _types(violations):
@@ -38,16 +40,19 @@ def _types(violations):
     return {line.split(":", 1)[0] for line in violations}
 
 
-@pytest.mark.parametrize("label,expected", [
-    # The locked multi-line convention: <div> opens a block, so it breaks
-    # the line just as </div> closes it. Measuring 'Verify<div>Token</div>'
-    # as one 11-char line overstates its width by ~2x.
-    ("Verify<div>Token</div>", ["Verify", "Token"]),
-    ("<div>Route</div><div>Request</div>", ["Route", "Request"]),
-    ("Plain label", ["Plain label"]),
-    ("Read<br>Write", ["Read", "Write"]),
-    ("<b>Bold</b>&nbsp;text", ["Bold text"]),
-])
+@pytest.mark.parametrize(
+    "label,expected",
+    [
+        # The locked multi-line convention: <div> opens a block, so it breaks
+        # the line just as </div> closes it. Measuring 'Verify<div>Token</div>'
+        # as one 11-char line overstates its width by ~2x.
+        ("Verify<div>Token</div>", ["Verify", "Token"]),
+        ("<div>Route</div><div>Request</div>", ["Route", "Request"]),
+        ("Plain label", ["Plain label"]),
+        ("Read<br>Write", ["Read", "Write"]),
+        ("<b>Bold</b>&nbsp;text", ["Bold text"]),
+    ],
+)
 def test_normalise_label_splits_lines(label, expected):
     assert normalise_label(label) == expected
 
@@ -83,8 +88,7 @@ def test_crossing_fixture_fires_only_crossing(tmp_path):
     v = validate(str(p))
     assert v, "expected at least one CROSSING violation"
     assert _types(v) == {"CROSSING"}, (
-        f"expected only CROSSING violations, got: {sorted(_types(v))} "
-        f"with details: {v}"
+        f"expected only CROSSING violations, got: {sorted(_types(v))} with details: {v}"
     )
 
 
@@ -94,8 +98,7 @@ def test_overlap_fixture_fires_only_overlap(tmp_path):
     v = validate(str(p))
     assert v, "expected at least one OVERLAP violation"
     assert _types(v) == {"OVERLAP"}, (
-        f"expected only OVERLAP violations, got: {sorted(_types(v))} "
-        f"with details: {v}"
+        f"expected only OVERLAP violations, got: {sorted(_types(v))} with details: {v}"
     )
 
 
@@ -162,8 +165,7 @@ def test_diagonal_fixture_fires_only_diagonal(tmp_path):
     v = validate(str(p))
     assert v, "expected at least one DIAGONAL violation"
     assert _types(v) == {"DIAGONAL"}, (
-        f"expected only DIAGONAL violations, got: {sorted(_types(v))} "
-        f"with details: {v}"
+        f"expected only DIAGONAL violations, got: {sorted(_types(v))} with details: {v}"
     )
 
 
@@ -173,8 +175,7 @@ def test_dangling_fixture_fires_only_dangling(tmp_path):
     v = validate(str(p))
     assert v, "expected at least one DANGLING violation"
     assert _types(v) == {"DANGLING"}, (
-        f"expected only DANGLING violations, got: {sorted(_types(v))} "
-        f"with details: {v}"
+        f"expected only DANGLING violations, got: {sorted(_types(v))} with details: {v}"
     )
 
 
@@ -183,14 +184,12 @@ def test_three_tier_example_validates_clean(tmp_path):
     example = SKILL_ROOT / "examples" / "build_three_tier_web.py"
     result = subprocess.run(
         [sys.executable, str(example)],
-        cwd=tmp_path, capture_output=True, text=True,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
     )
-    assert result.returncode == 0, (
-        f"example build failed: {result.stderr}"
-    )
+    assert result.returncode == 0, f"example build failed: {result.stderr}"
     out = tmp_path / "three-tier-web.drawio"
     assert out.exists(), "example did not produce three-tier-web.drawio"
     v = validate(str(out))
-    assert v == [], (
-        f"three-tier example should validate clean, got: {v}"
-    )
+    assert v == [], f"three-tier example should validate clean, got: {v}"
