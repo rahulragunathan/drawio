@@ -193,3 +193,143 @@ def test_three_tier_example_validates_clean(tmp_path):
     assert out.exists(), "example did not produce three-tier-web.drawio"
     v = validate(str(out))
     assert v == [], f"three-tier example should validate clean, got: {v}"
+
+
+def test_parse_drawio_resolves_child_geometry_against_its_parent(tmp_path):
+    # A child cell's mxGeometry is relative to its parent's origin. Read as
+    # absolute, a glyph at (10, 16) inside a box at (400, 300) becomes a
+    # phantom obstacle near the canvas origin.
+    from builders import build_icon_box_clean
+    from validate import parse_drawio
+
+    boxes, _ = parse_drawio(str(build_icon_box_clean(tmp_path / "d.drawio")))
+
+    glyph = next(b for b in boxes.values() if b.w == 28 and b.h == 28)
+    assert (glyph.x, glyph.y) == (410, 316)
+
+
+def test_icon_box_diagram_is_clean(tmp_path):
+    from builders import build_icon_box_clean
+
+    assert validate(str(build_icon_box_clean(tmp_path / "d.drawio"))) == []
+
+
+def test_a_glyph_inside_a_box_does_not_duplicate_its_crossing(tmp_path):
+    from builders import build_icon_child_duplicate_crossing
+
+    v = validate(str(build_icon_child_duplicate_crossing(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"CROSSING"}
+    assert len(v) == 1, f"one routing problem, one finding; got {v}"
+
+
+def test_edge_through_an_icon_caption_is_flagged(tmp_path):
+    from builders import build_icon_node_caption_crossing
+
+    v = validate(str(build_icon_node_caption_crossing(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"CROSSING"}
+
+
+def test_icon_node_clear_of_its_caption_is_clean(tmp_path):
+    from builders import build_icon_node_clean
+
+    assert validate(str(build_icon_node_clean(tmp_path / "d.drawio"))) == []
+
+
+def test_a_non_icon_child_of_a_container_is_still_an_obstacle(tmp_path):
+    from builders import build_swimlane_child_box
+
+    v = validate(str(build_swimlane_child_box(tmp_path / "d.drawio")))
+
+    assert "CROSSING" in _types(v)
+
+
+def test_typo_in_a_stencil_name_is_flagged_with_a_suggestion(tmp_path):
+    from builders import build_unknown_icon
+
+    v = validate(str(build_unknown_icon(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"UNKNOWN_ICON"}
+    assert "mxgraph.aws4.lambda" in v[0]
+
+
+def test_a_correctly_named_icon_does_not_warn(tmp_path):
+    from builders import build_known_icon
+
+    assert validate(str(build_known_icon(tmp_path / "d.drawio"))) == []
+
+
+def test_a_remote_image_is_flagged_as_not_offline_safe(tmp_path):
+    from builders import build_remote_image_icon
+
+    v = validate(str(build_remote_image_icon(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"UNKNOWN_ICON"}
+    assert "offline" in v[0].lower()
+
+
+def test_an_embedded_data_uri_icon_is_not_flagged(tmp_path):
+    from builders import build_data_uri_icon
+
+    assert validate(str(build_data_uri_icon(tmp_path / "d.drawio"))) == []
+
+
+def test_unknown_icon_is_a_warning_not_an_error(tmp_path):
+    from builders import build_unknown_icon
+    from validate import violation_severity
+
+    v = validate(str(build_unknown_icon(tmp_path / "d.drawio")))
+
+    assert violation_severity(v[0]) == "warning"
+
+
+def test_bare_pricon_is_qualified_from_its_shape_library():
+    # Kubernetes writes prIcon=api; AWS writes prIcon=mxgraph.aws4.athena.
+    # A bare value belongs to the library named by shape=, and resolving it
+    # wrongly would warn on every Kubernetes icon.
+    from validate import icon_references, parse_style
+
+    k8s = parse_style("shape=mxgraph.kubernetes.icon2;prIcon=api;")
+    aws = parse_style("shape=mxgraph.aws4.productIcon;prIcon=mxgraph.aws4.athena;")
+
+    assert ("name", "mxgraph.kubernetes.api") in icon_references(k8s)
+    assert ("name", "mxgraph.aws4.athena") in icon_references(aws)
+
+
+def test_every_catalog_icon_passes_the_validator(tmp_path):
+    """The catalog and the validator must agree on what a valid name is.
+
+    They resolve names by separate code paths, so a rule that drifts in one
+    (the bare-prIcon case especially) would warn on icons the catalog calls
+    correct.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(SKILL_ROOT / "scripts"))
+    import list_icons
+    from validate import icon_references, load_icon_names
+
+    universe = load_icon_names()
+    catalog = list_icons.load_catalog()
+    assert catalog and universe
+
+    unknown = []
+    for key, entry in catalog.items():
+        fam = list_icons.FAMILIES[entry["family"]]
+        name = entry["name"]
+        if fam["kind"] == "image":
+            style = {"shape": "image", "image": fam["prefix"] + name}
+        elif fam["wrapper"]:
+            qualified = name if "." in name else fam["prefix"] + name
+            style = {
+                "shape": fam["wrapper"],
+                fam["key"]: name if fam["bare"] else qualified,
+            }
+        else:
+            style = {"shape": name if "." in name else fam["prefix"] + name}
+        for kind, ref in icon_references(style):
+            if kind == "name" and ref not in universe:
+                unknown.append((key, ref))
+
+    assert unknown == []

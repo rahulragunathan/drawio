@@ -404,3 +404,230 @@ def build_label_overlap(out_path):
         label_offset=(0, -150),
     )
     _write(mxfile, out_path)
+
+
+ICON_CHILD_STYLE = (
+    "sketch=0;outlineConnect=0;dashed=0;html=1;aspect=fixed;"
+    "pointerEvents=0;movable=0;resizable=0;rotatable=0;editable=0;"
+    "connectable=0;labelPosition=center;verticalLabelPosition=middle;"
+    "verticalAlign=middle;align=center;strokeColor=#ffffff;fillColor=#ED7100;"
+    "shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;"
+    "drawioSkillRole=icon;"
+)
+
+ICON_NODE_STYLE = (
+    "sketch=0;outlineConnect=0;dashed=0;html=1;aspect=fixed;pointerEvents=1;"
+    "labelPosition=center;verticalLabelPosition=bottom;align=center;"
+    "verticalAlign=top;fontSize=11;fontColor=#232F3E;strokeColor=#ffffff;"
+    "fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;"
+    "resIcon=mxgraph.aws4.lambda;"
+)
+
+
+def _icon_child(root, counter, parent_id, x, y, w, h, style=ICON_CHILD_STYLE):
+    """A glyph cell parented to a box. Its geometry is relative to the
+    parent's origin, which is how draw.io keeps the two together when the
+    box is moved in Desktop."""
+    cid = str(counter[0])
+    counter[0] += 1
+    c = ET.SubElement(
+        root,
+        "mxCell",
+        id=cid,
+        value="",
+        style=style,
+        vertex="1",
+        parent=parent_id,
+    )
+    ET.SubElement(
+        c,
+        "mxGeometry",
+        x=str(x),
+        y=str(y),
+        width=str(w),
+        height=str(h),
+        **{"as": "geometry"},
+    )
+    return cid
+
+
+def _icon_node(root, counter, x, y, size, value, style=ICON_NODE_STYLE):
+    """A standalone glyph whose caption renders below the shape."""
+    cid = str(counter[0])
+    counter[0] += 1
+    c = ET.SubElement(
+        root, "mxCell", id=cid, value=value, style=style, vertex="1", parent="1"
+    )
+    ET.SubElement(
+        c,
+        "mxGeometry",
+        x=str(x),
+        y=str(y),
+        width=str(size),
+        height=str(size),
+        **{"as": "geometry"},
+    )
+    return cid
+
+
+def build_icon_box_clean(path):
+    """A labelled box with a glyph inside it, and an unrelated edge that
+    runs where the glyph's geometry would land if it were read as absolute
+    rather than relative to its parent."""
+    mxfile, root, counter = _new_doc()
+    parent = _box(root, counter, 400, 300, 200, 60, "Order Handler")
+    _icon_child(root, counter, parent, 10, 16, 28, 28)
+    src = _box(root, counter, 300, 15, 60, 30, "S")
+    dst = _box(root, counter, 300, 400, 60, 30, "T")
+    _edge(
+        root,
+        counter,
+        src,
+        dst,
+        waypoints=[(24, 30), (24, 415)],
+        exitX=0,
+        exitY=0.5,
+        entryX=0,
+        entryY=0.5,
+    )
+    _write(mxfile, path)
+    return path
+
+
+def build_icon_child_duplicate_crossing(path):
+    """An edge that genuinely cuts through a box carrying a glyph.
+
+    The CROSSING is real and must be reported — once, for the box. The glyph
+    sits inside that same box, so reporting it separately is a duplicate
+    finding for a single routing problem.
+    """
+    mxfile, root, counter = _new_doc()
+    src = _box(root, counter, 40, 315, 60, 30, "S")
+    dst = _box(root, counter, 700, 315, 60, 30, "T")
+    blocker = _box(root, counter, 400, 300, 200, 60, "Order Handler")
+    _icon_child(root, counter, blocker, 10, 16, 28, 28)
+    _edge(
+        root,
+        counter,
+        src,
+        dst,
+        exitX=1,
+        exitY=0.5,
+        entryX=0,
+        entryY=0.5,
+    )
+    _write(mxfile, path)
+    return path
+
+
+def build_icon_node_caption_crossing(path):
+    """An edge that misses the glyph but runs straight through its caption.
+
+    The caption renders below the 48px shape and is wider than it, so this
+    is invisible to a check that only knows the shape's bounding box.
+    """
+    mxfile, root, counter = _new_doc()
+    _icon_node(root, counter, 400, 300, 48, "Order Handler")
+    src = _box(root, counter, 100, 345, 60, 30, "S")
+    dst = _box(root, counter, 700, 345, 60, 30, "T")
+    _edge(root, counter, src, dst, exitX=1, exitY=0.5, entryX=0, entryY=0.5)
+    _write(mxfile, path)
+    return path
+
+
+def build_icon_node_clean(path):
+    """The same glyph, with the edge routed clear of its caption."""
+    mxfile, root, counter = _new_doc()
+    _icon_node(root, counter, 400, 300, 48, "Order Handler")
+    src = _box(root, counter, 100, 485, 60, 30, "S")
+    dst = _box(root, counter, 700, 485, 60, 30, "T")
+    _edge(root, counter, src, dst, exitX=1, exitY=0.5, entryX=0, entryY=0.5)
+    _write(mxfile, path)
+    return path
+
+
+def build_swimlane_child_box(path):
+    """A real box nested inside a container is still a genuine obstacle.
+
+    Guards the conjunction in is_decoration: exempting every child of a
+    vertex, rather than only icon children, would lose this CROSSING.
+    """
+    mxfile, root, counter = _new_doc()
+    zone = _box(root, counter, 350, 250, 300, 160, "Zone", is_container=True)
+    inner = str(counter[0])
+    counter[0] += 1
+    c = ET.SubElement(
+        root,
+        "mxCell",
+        id=inner,
+        value="Nested",
+        style=(
+            "rounded=1;whiteSpace=wrap;html=1;fillColor=#cccccc;"
+            "strokeColor=#666666;strokeWidth=1;fontSize=12;"
+        ),
+        vertex="1",
+        parent=zone,
+    )
+    ET.SubElement(
+        c,
+        "mxGeometry",
+        x="50",
+        y="50",
+        width="200",
+        height="60",
+        **{"as": "geometry"},
+    )
+    src = _box(root, counter, 100, 315, 60, 30, "S")
+    dst = _box(root, counter, 700, 315, 60, 30, "T")
+    _edge(root, counter, src, dst, exitX=1, exitY=0.5, entryX=0, entryY=0.5)
+    _write(mxfile, path)
+    return path
+
+
+def _icon_only_doc(path, style, value="Widget"):
+    mxfile, root, counter = _new_doc()
+    _icon_node(root, counter, 400, 300, 48, value, style=style)
+    _write(mxfile, path)
+    return path
+
+
+def build_unknown_icon(path):
+    """A stencil name with a typo. draw.io renders this as an empty shape
+    with no error of any kind, so nothing else in the loop catches it."""
+    return _icon_only_doc(
+        path,
+        "sketch=0;html=1;aspect=fixed;verticalLabelPosition=bottom;"
+        "verticalAlign=top;align=center;shape=mxgraph.aws4.resourceIcon;"
+        "resIcon=mxgraph.aws4.lamda;",
+    )
+
+
+def build_remote_image_icon(path):
+    """An icon pulled from the web. Renders today, blank on any machine
+    that cannot reach the host."""
+    return _icon_only_doc(
+        path,
+        "shape=image;html=1;aspect=fixed;verticalLabelPosition=bottom;"
+        "verticalAlign=top;align=center;"
+        "image=https://example.com/logo.svg;",
+    )
+
+
+def build_data_uri_icon(path):
+    """An embedded SVG. Self-contained, so there is nothing to verify."""
+    return _icon_only_doc(
+        path,
+        "shape=image;html=1;aspect=fixed;verticalLabelPosition=bottom;"
+        "verticalAlign=top;align=center;"
+        "image=data:image/svg+xml,PHN2Zy8+;",
+    )
+
+
+def build_known_icon(path):
+    """A correctly named icon must not warn."""
+    return _icon_only_doc(
+        path,
+        "sketch=0;html=1;aspect=fixed;verticalLabelPosition=bottom;"
+        "verticalAlign=top;align=center;shape=mxgraph.aws4.resourceIcon;"
+        "resIcon=mxgraph.aws4.lambda;",
+    )

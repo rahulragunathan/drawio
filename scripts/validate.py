@@ -1,8 +1,11 @@
 """Geometric validator for draw.io diagrams.
 
-Eight checks:
+Nine checks:
   1. CROSSING          — edge segment passes through the interior of any
-                         non-source / non-target solid box.
+                         non-source / non-target solid box, including the
+                         caption band beneath a bottom-labelled icon. A
+                         glyph nested inside a box is skipped: the box is
+                         already checked at those coordinates.
   2. OVERLAP           — two edge segments share 8+ px on the same axis-
                          aligned line (within a 1.5 px orthogonal tolerance).
   3. TEXT_OVERLAP      — edge segment passes through the top 28 px title
@@ -38,6 +41,12 @@ Eight checks:
   8. DANGLING          — an edge's source or target id does not resolve to
                          any shape. Usually a typo or a deleted box; the
                          edge would render detached in draw.io.
+  9. UNKNOWN_ICON      — a cell's stencil, resIcon/prIcon or image name is
+                         not one draw.io ships, or it is a remote URL that
+                         only renders where the host is reachable. A
+                         mistyped stencil draws as an empty shape and
+                         reports no error, so nothing else catches it.
+                         Skipped when assets/icon_names.txt.gz is absent.
 
 Severity: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP and DANGLING are
 hard ERRORS (non-zero exit). DIAGONAL, LABEL_BOX_OVERLAP and
@@ -63,9 +72,12 @@ violations are found.
 
 from __future__ import annotations
 
+import difflib
+import gzip
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
 
 # --------------------------------------------------------------------------
@@ -107,6 +119,9 @@ LABEL_Y_PAD = 4.0
 # small overlaps) and is not flagged by LABEL_BOX_OVERLAP.
 LABEL_BOX_MIN_OVERLAP = 8.0
 
+# px between a glyph's bottom edge and the caption rendered beneath it.
+CAPTION_BAND_PAD = 2.0
+
 # px slack when deciding whether a box sits inside a container (TEXT_OVERLAP
 # entry exemption). Absorbs half-pixel authoring arithmetic on a box flush
 # with a zone edge.
@@ -118,7 +133,12 @@ CONTAINMENT_MARGIN = 1.0
 # its white background usually masks, or a label estimated slightly wider
 # than its own edge) without blocking.
 ERROR_CHECKS = {"CROSSING", "OVERLAP", "TEXT_OVERLAP", "LABEL_OVERLAP", "DANGLING"}
-WARNING_CHECKS = {"DIAGONAL", "LABEL_BOX_OVERLAP", "SHORT_LABELLED_EDGE"}
+WARNING_CHECKS = {
+    "DIAGONAL",
+    "LABEL_BOX_OVERLAP",
+    "SHORT_LABELLED_EDGE",
+    "UNKNOWN_ICON",
+}
 
 
 def violation_severity(violation: str) -> str:
@@ -137,6 +157,16 @@ class Box:
     w: float
     h: float
     is_container: bool
+    # Set for cells that carry a vendor glyph (a stencil shape or an image).
+    parent_id: str = "1"
+    is_icon: bool = False
+    # An icon nested inside another shape. It sits within a box that is
+    # already an obstacle, so it must not be treated as a second one.
+    is_decoration: bool = False
+    # True when the label renders BELOW the shape rather than inside it,
+    # which is the draw.io default for vendor icons.
+    label_below: bool = False
+    style: dict = field(default_factory=dict)
 
     @property
     def x2(self):
@@ -151,11 +181,42 @@ class Box:
         coords ex, ey in [0,1] on the box edges."""
         return (self.x + ex * self.w, self.y + ey * self.h)
 
+    def obstacle_rect(self) -> tuple[float, float, float, float]:
+        """The rect an edge must not run through: the shape, plus its caption
+        band when the label sits below it.
+
+        Anchors and containment deliberately keep using the SHAPE rect
+        (x, y, x2, y2). A caption is ink, not geometry you connect to — an
+        entryY=1 anchor must land on the glyph's bottom edge, not somewhere
+        in the text beneath it.
+        """
+        if not (self.label_below and self.label.strip()):
+            return (self.x, self.y, self.x2, self.y2)
+        cx1, cy1, cx2, cy2 = caption_rect(self)
+        return (min(self.x, cx1), self.y, max(self.x2, cx2), max(self.y2, cy2))
+
     def contains_point(self, x: float, y: float, margin: float = 0) -> bool:
         return (
             self.x - margin <= x <= self.x2 + margin
             and self.y - margin <= y <= self.y2 + margin
         )
+
+
+def caption_rect(box: Box) -> tuple[float, float, float, float]:
+    """The band a bottom-positioned label occupies, below the shape.
+
+    Sized with the same estimator as an edge label, so a caption and a label
+    are measured by one rule. Centred on the shape because draw.io centres a
+    bottom label — and a caption is routinely WIDER than the 48px glyph it
+    belongs to, which is exactly why the shape's own bounding box is not
+    enough to keep arrows off the text.
+    """
+    lines = normalise_label(box.label) or [""]
+    w = max(len(ln) for ln in lines) * LABEL_PER_CHAR_PX + 2 * LABEL_X_PAD
+    h = len(lines) * LABEL_LINE_HEIGHT + 2 * LABEL_Y_PAD
+    cx = box.x + box.w / 2
+    top = box.y2 + CAPTION_BAND_PAD
+    return (cx - w / 2, top, cx + w / 2, top + h)
 
 
 @dataclass
@@ -178,6 +239,51 @@ class Edge:
     dst_point: tuple[float, float] | None = None
 
 
+def load_icon_names() -> set[str]:
+    """Every icon name draw.io can resolve, from the committed list.
+
+    Returns an empty set when the file is missing, which disables
+    UNKNOWN_ICON rather than failing: validate.py must keep working as a
+    standalone copy, and a missing catalog is not a diagram defect.
+    """
+    names_file = Path(__file__).resolve().parent.parent / "assets" / "icon_names.txt.gz"
+    try:
+        with gzip.open(names_file, "rt", encoding="utf8") as fh:
+            return {ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")}
+    except OSError:
+        return set()
+
+
+def icon_references(style_d: dict[str, str]) -> list[tuple[str, str]]:
+    """The icon names a style refers to, as (kind, name) pairs.
+
+    kind is "name" for something checkable against the catalog, or "remote"
+    for an http(s) image, which renders now but breaks wherever the host is
+    unreachable. Embedded data: URIs are self-contained and yield nothing.
+    """
+    out: list[tuple[str, str]] = []
+    shape = style_d.get("shape", "")
+    if shape.startswith("mxgraph."):
+        out.append(("name", shape))
+    res = style_d.get("resIcon")
+    if res:
+        out.append(("name", res))
+    pr = style_d.get("prIcon")
+    if pr:
+        # AWS qualifies this value; Kubernetes leaves it bare, in which case
+        # it belongs to the library named by shape=.
+        if "." in pr:
+            out.append(("name", pr))
+        elif shape.startswith("mxgraph."):
+            out.append(("name", shape.rsplit(".", 1)[0] + "." + pr))
+    image = style_d.get("image", "")
+    if image.startswith(("http://", "https://")):
+        out.append(("remote", image))
+    elif image and not image.startswith("data:"):
+        out.append(("name", image))
+    return out
+
+
 def parse_style(style: str) -> dict[str, str]:
     out = {}
     for piece in style.split(";"):
@@ -187,11 +293,47 @@ def parse_style(style: str) -> dict[str, str]:
     return out
 
 
+def _absolute_origin(cid, raw, seen=None):
+    """Sum a cell's ancestors' offsets to get its absolute position.
+
+    A child cell's mxGeometry is relative to its parent's origin, which is
+    how draw.io keeps a glyph attached to the box it decorates. Reading it
+    as absolute turns a glyph at (10, 16) inside a box at (400, 300) into a
+    phantom obstacle near the canvas origin, and every edge that legitimately
+    passes through that corner starts reporting CROSSING.
+    """
+    seen = seen or set()
+    parent = raw[cid]["parent"]
+    if parent in ("0", "1", None) or parent not in raw or parent in seen:
+        return 0.0, 0.0
+    seen.add(parent)
+    px, py = _absolute_origin(parent, raw, seen)
+    return raw[parent]["x"] + px, raw[parent]["y"] + py
+
+
 def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
     tree = ET.parse(path)
     root = tree.getroot()
     boxes: dict[str, Box] = {}
     edges: list[Edge] = []
+
+    # Pass 1: collect raw vertex geometry so parents can be resolved
+    # regardless of the order cells appear in the file.
+    raw: dict[str, dict] = {}
+    edge_ids = {c.get("id") for c in root.findall(".//mxCell") if c.get("edge") == "1"}
+    for cell in root.findall(".//mxCell"):
+        cid = cell.get("id")
+        if cid in ("0", "1") or cell.get("vertex") != "1":
+            continue
+        geom = cell.find("mxGeometry")
+        if geom is None:
+            continue
+        raw[cid] = {
+            "parent": cell.get("parent"),
+            "x": float(geom.get("x", 0)),
+            "y": float(geom.get("y", 0)),
+        }
+
     for cell in root.findall(".//mxCell"):
         cid = cell.get("id")
         if cid in ("0", "1"):
@@ -200,9 +342,16 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
         style_d = parse_style(style)
         geom = cell.find("mxGeometry")
         if cell.get("vertex") == "1" and geom is not None:
-            # Box
-            x = float(geom.get("x", 0))
-            y = float(geom.get("y", 0))
+            parent_id = cell.get("parent") or "1"
+            # A vertex parented to an EDGE is a label cell, which draw.io
+            # Desktop writes on round-trip. Its geometry is a fractional
+            # position along the edge, not a rectangle on the canvas, so it
+            # cannot be placed and must not become an obstacle.
+            if geom.get("relative") == "1" or parent_id in edge_ids:
+                continue
+            ox, oy = _absolute_origin(cid, raw)
+            x = float(geom.get("x", 0)) + ox
+            y = float(geom.get("y", 0)) + oy
             w = float(geom.get("width", 0))
             h = float(geom.get("height", 0))
             # A container is a dashed-edge zone with its title pinned to
@@ -215,8 +364,33 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
             is_container = (
                 style_d.get("dashed") == "1" and style_d.get("verticalAlign") == "top"
             )
-            label = (cell.get("value") or "")[:60]
-            boxes[cid] = Box(cid, label, x, y, w, h, is_container)
+            # Not truncated: the label now feeds geometry (an icon caption
+            # band is sized from it). Message sites truncate for display.
+            label = cell.get("value") or ""
+            is_icon = (
+                style_d.get("drawioSkillRole") == "icon"
+                or style_d.get("shape", "").startswith("mxgraph.")
+                or "image" in style_d
+            )
+            boxes[cid] = Box(
+                cid,
+                label,
+                x,
+                y,
+                w,
+                h,
+                is_container,
+                parent_id=parent_id,
+                is_icon=is_icon,
+                # A decoration is an icon that lives INSIDE another shape. It
+                # is deliberately a conjunction: "child of a vertex" alone
+                # would exempt a real box dropped into a swimlane and lose a
+                # genuine CROSSING, while "is an icon" alone would exempt an
+                # icon_node(), which IS the shape.
+                is_decoration=is_icon and parent_id in raw,
+                label_below=style_d.get("verticalLabelPosition") == "bottom",
+                style=style_d,
+            )
         elif cell.get("edge") == "1":
             ex = style_d.get("exitX")
             ey = style_d.get("exitY")
@@ -488,17 +662,33 @@ def segment_crosses_box(
     edge_buffer: float = EDGE_BUFFER,
     ortho_tol: float = ORTHO_TOL,
 ) -> bool:
+    """Return True if the segment from a to b passes through the box's ink.
+
+    That means the shape plus, for a bottom-labelled icon, its caption band —
+    see Box.obstacle_rect().
+    """
+    return segment_crosses_rect(a, b, box.obstacle_rect(), edge_buffer, ortho_tol)
+
+
+def segment_crosses_rect(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    rect: tuple[float, float, float, float],
+    edge_buffer: float = EDGE_BUFFER,
+    ortho_tol: float = ORTHO_TOL,
+) -> bool:
     """Return True if the segment from a to b passes through the
-    interior of the box. Treats near-orthogonal segments (delta ≤
+    interior of the rect. Treats near-orthogonal segments (delta ≤
     ortho_tol on the minor axis) as orthogonal — this catches cases
     where source/target anchor y values differ by half a pixel because
     of integer-vs-fractional box-midline arithmetic."""
     ax, ay = a
     bx, by = b
-    x_min = box.x + edge_buffer
-    x_max = box.x2 - edge_buffer
-    y_min = box.y + edge_buffer
-    y_max = box.y2 - edge_buffer
+    rx1, ry1, rx2, ry2 = rect
+    x_min = rx1 + edge_buffer
+    x_max = rx2 - edge_buffer
+    y_min = ry1 + edge_buffer
+    y_max = ry2 - edge_buffer
     if x_min >= x_max or y_min >= y_max:
         return False
     # Horizontal segment (allow small y delta)
@@ -663,6 +853,34 @@ def validate(path: str) -> list[str]:
                 f"(source={e.src!r}, target={e.dst!r})"
             )
 
+    # 1b. Unknown icon names. Run before the geometry work: this is a name
+    # check, and it must reach cells whose geometry says nothing useful. A
+    # mistyped stencil renders as an empty shape with no error anywhere, so
+    # nothing else in the loop can catch it.
+    icon_universe = load_icon_names()
+    lowered = {n.lower(): n for n in icon_universe}
+    for box in boxes.values():
+        for kind, ref in icon_references(box.style):
+            if kind == "remote":
+                # Independent of the catalog: a remote URL is not offline-safe
+                # whether or not we can check names.
+                violations.append(
+                    f"UNKNOWN_ICON: cell '{short_label(box.label)}' loads a "
+                    f"remote image {ref!r}; the diagram is not offline-safe "
+                    f"— embed the SVG instead"
+                )
+                continue
+            if not icon_universe:
+                continue
+            if ref in icon_universe or ref.lower() in lowered:
+                continue
+            near = difflib.get_close_matches(ref, icon_universe, n=1, cutoff=0.8)
+            hint = f" — did you mean {near[0]!r}?" if near else ""
+            violations.append(
+                f"UNKNOWN_ICON: cell '{short_label(box.label)}' uses "
+                f"{ref!r}, which is not in the bundled icon catalog{hint}"
+            )
+
     # Pre-compute polylines
     edge_lines = {}
     for e in edges:
@@ -678,6 +896,11 @@ def validate(path: str) -> list[str]:
         for a, b in segments(poly):
             for bid, box in boxes.items():
                 if box.is_container:
+                    continue
+                # A glyph inside a box is not a second obstacle: the box it
+                # decorates is already checked at the same coordinates, so
+                # flagging both reports one routing problem twice.
+                if box.is_decoration:
                     continue
                 if bid == edge.src or bid == edge.dst:
                     continue
@@ -791,9 +1014,11 @@ def validate(path: str) -> list[str]:
         for bid, box in boxes.items():
             if box.is_container:
                 continue
+            if box.is_decoration:
+                continue
             if bid == edge.src or bid == edge.dst:
                 continue
-            if rects_overlap(lb, (box.x, box.y, box.x2, box.y2)):
+            if rects_overlap(lb, box.obstacle_rect()):
                 ov_x = min(lb[2], box.x2) - max(lb[0], box.x)
                 ov_y = min(lb[3], box.y2) - max(lb[1], box.y)
                 if min(ov_x, ov_y) < LABEL_BOX_MIN_OVERLAP:
