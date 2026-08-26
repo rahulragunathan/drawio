@@ -19,9 +19,6 @@ Conventions exercised:
 - Subheadings via sub() — italicised, explicit font-size.
 - Description body via desc() — sentence case, non-bold, explicit
   font-size.
-- Dark-mode colours via ld()/light-dark(): boxes and containers carry
-  *_dark accents; edge color_dark auto-themes the label. (Preview shows
-  light mode only — check dark contrast in draw.io Desktop.)
 - edge() options: a bidirectional Web<->DB Read/Write edge (edge 7 — the
   exception; almost everything else is one-way), and a jump=gap hop where
   the Read lane crosses the Gateway->Web arrow (edge 6).
@@ -36,13 +33,10 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 
-# --- Source-based palette (light value + dark-mode contrast variant) ---
+# --- Source-based palette: each arrow takes its source box's colour ---
 # The goal is clear contrast in both themes, not a particular palette. draw.io
-# Desktop is usually viewed in dark mode, where pale fills and dark text wash
-# out, so colours that wouldn't read in both themes are emitted via
-# light-dark() (see ld()). The dark variant is a lighter/brighter tint of the
-# SAME hue — calm but legible. (Bright accents would work too; contrast is the
-# rule, not restraint.)
+# One colour per category. draw.io inverts colours for its own dark theme, and
+# it does that better than setting a dark variant by hand did.
 COLOR_PRIMARY_BLUE = "#0078d4"  # External clients / primary infrastructure
 COLOR_FUTURE_GREY = "#9e9e9e"  # Future-state / out-of-scope
 COLOR_CONFIG_GOLD = "#bf8f00"  # Configuration / repository
@@ -51,12 +45,7 @@ COLOR_FRONTEND_GREEN = "#34a853"  # User-facing application service
 COLOR_DATASTORE_NAVY = "#003c71"  # Datastore / index
 COLOR_GATEWAY_ORANGE = "#d04a02"  # Gateway / auth tier
 
-COLOR_PRIMARY_BLUE_DARK = "#4da3ff"  # lighter blue
-COLOR_CONFIG_GOLD_DARK = "#ffd966"  # lighter gold
-COLOR_ORCH_PURPLE_DARK = "#b59dff"  # lighter purple
 COLOR_WORKER_PURPLE = "#8e7cc3"  # pale worker fill ...
-COLOR_WORKER_PURPLE_DARK = "#cbbcff"  # ... lighter lavender (dark text)
-COLOR_DATASTORE_NAVY_DARK = "#7fb3e6"  # light steel-blue
 # Green and orange read in both themes; left single-colour.
 
 
@@ -96,12 +85,6 @@ def cell_id():
     return cid
 
 
-def ld(light, dark=None):
-    """Theme colour: ld('#0078D4','#FF66B3') -> 'light-dark(#0078D4,#FF66B3)'.
-    draw.io renders the light value in light mode, the dark in dark mode."""
-    return f"light-dark({light},{dark})" if dark else light
-
-
 def container(
     x,
     y,
@@ -112,14 +95,11 @@ def container(
     fill="#ffffff",
     fontColor=None,
     fontSize=14,
-    fill_dark=None,
-    stroke_dark=None,
-    fontColor_dark=None,
 ):
     cid = cell_id()
-    fillC = ld(fill, fill_dark)
-    strokeC = ld(stroke, stroke_dark)
-    fontC = ld(fontColor or stroke, fontColor_dark or stroke_dark)
+    fillC = fill
+    strokeC = stroke
+    fontC = fontColor or stroke
     style = (
         f"rounded=0;whiteSpace=wrap;html=1;"
         f"fillColor={fillC};strokeColor={strokeC};strokeWidth=2;"
@@ -158,14 +138,11 @@ def box(
     spacingTop=0,
     spacingLeft=0,
     dashed=False,
-    fill_dark=None,
-    stroke_dark=None,
-    fontColor_dark=None,
 ):
     cid = cell_id()
-    fillC = ld(fill, fill_dark)
-    strokeC = ld(stroke or fill, stroke_dark or fill_dark)
-    fontC = ld(fontColor, fontColor_dark)
+    fillC = fill
+    strokeC = stroke or fill
+    fontC = fontColor
     style = (
         f"rounded=1;whiteSpace=wrap;html=1;"
         f"fillColor={fillC};strokeColor={strokeC};strokeWidth=1;"
@@ -210,11 +187,9 @@ def edge(
     entryY=None,
     label_x=None,
     label_y=None,
-    color_dark=None,
     jump=False,
     bidirectional=False,
     end_arrow=True,
-    label_color_dark=None,
 ):
     cid = cell_id()
     dash = ""
@@ -230,7 +205,7 @@ def edge(
         if entryX is not None
         else ""
     )
-    strokeC = ld(color, color_dark)
+    strokeC = color
     end_str = "endArrow=classic;endFill=1;" if end_arrow else "endArrow=none;"
     start_str = "startArrow=classic;startFill=1;" if bidirectional else ""
     style_str = (
@@ -242,9 +217,6 @@ def edge(
         f"fontColor={strokeC};labelBackgroundColor=#ffffff;"
     )
     value = label or ""
-    dark_label = label_color_dark or color_dark
-    if label and dark_label:
-        value = f'<font color="light-dark(#000000,{dark_label})">{label}</font>'
     c = ET.SubElement(
         root,
         "mxCell",
@@ -286,7 +258,7 @@ def desc(text, size=11):
     return f"<span style='font-weight:normal;font-size:{size}px'>{text}</span>"
 
 
-# ----- Title bar (dark navy reads in both themes) -----
+# ----- Title bar -----
 box(
     40,
     20,
@@ -299,8 +271,7 @@ box(
 
 
 # ----- Containers (rendered first so boxes layer on top) -----
-# Pale zone fills wash out on the dark canvas, so each gets a dark fill +
-# light title via *_dark. Demonstrates container theming.
+# Zones are pale fills with a matching stroke and title colour.
 container(
     40,
     92,
@@ -310,8 +281,6 @@ container(
     stroke="#3a6ea5",
     fill="#eaf3fb",
     fontColor="#1f3864",
-    fill_dark="#10233a",
-    fontColor_dark="#cfe2ff",
 )
 container(
     380,
@@ -321,9 +290,6 @@ container(
     "Application Tier",
     stroke="#5b3fbf",
     fill="#f3f0ff",
-    fill_dark="#1c1633",
-    stroke_dark="#b59dff",
-    fontColor_dark="#d9ccff",
 )
 container(
     900,
@@ -333,9 +299,6 @@ container(
     "Data Tier",
     stroke="#003c71",
     fill="#e7f0fb",
-    fill_dark="#0c1f33",
-    stroke_dark="#8fb8e6",
-    fontColor_dark="#bfe0ff",
 )
 
 
@@ -346,9 +309,7 @@ browser = box(
     260,
     80,
     "<b>Browser / Mobile App</b><br>" + sub("User-Facing Clients"),
-    fill=COLOR_PRIMARY_BLUE,
-    fill_dark=COLOR_PRIMARY_BLUE_DARK,
-    fontColor_dark="#06243f",  # dark text on the lighter blue
+    fill=COLOR_PRIMARY_BLUE,  # dark text on the lighter blue
     bold=False,
 )
 
@@ -393,9 +354,6 @@ config = box(
     stroke=COLOR_CONFIG_GOLD,
     fontColor="#7f6000",
     fontSize=11,
-    fill_dark="#3a2f00",
-    stroke_dark=COLOR_CONFIG_GOLD_DARK,
-    fontColor_dark="#ffe9a6",
     valign="top",
     halign="left",
     spacingTop=10,
@@ -443,9 +401,6 @@ worker = box(
     "<b>Background Worker</b><br>" + sub("Async Jobs"),
     fill=COLOR_WORKER_PURPLE,
     stroke=COLOR_ORCH_PURPLE,
-    fill_dark=COLOR_WORKER_PURPLE_DARK,
-    stroke_dark=COLOR_ORCH_PURPLE_DARK,
-    fontColor_dark="#2a1f4d",
     fontSize=12,
     bold=False,
 )
@@ -462,8 +417,6 @@ primary_db = box(
     + "<br>"
     + desc("Transactional reads and writes"),
     fill=COLOR_DATASTORE_NAVY,
-    fill_dark=COLOR_DATASTORE_NAVY_DARK,
-    fontColor_dark="#0a2540",
     fontSize=12,
     bold=False,
 )
@@ -474,8 +427,6 @@ cache = box(
     72,
     "<b>Cache</b><br>" + sub("Hot Reads"),
     fill=COLOR_DATASTORE_NAVY,
-    fill_dark=COLOR_DATASTORE_NAVY_DARK,
-    fontColor_dark="#0a2540",
     fontSize=12,
     bold=False,
 )
@@ -486,8 +437,6 @@ queue = box(
     72,
     "<b>Message Queue</b><br>" + sub("Async Jobs"),
     fill=COLOR_DATASTORE_NAVY,
-    fill_dark=COLOR_DATASTORE_NAVY_DARK,
-    fontColor_dark="#0a2540",
     fontSize=12,
     bold=False,
 )
@@ -518,7 +467,6 @@ analytics_future = box(
 # ============================================================
 
 # 1. Browser -> API Gateway (source = blue). One-way, like most arrows.
-#    color_dark themes the stroke AND auto-themes the label.
 edge(
     browser,
     api_gw,
@@ -527,7 +475,6 @@ edge(
     entryX=0,
     entryY=0.5,
     color=COLOR_PRIMARY_BLUE,
-    color_dark=COLOR_PRIMARY_BLUE_DARK,
     label="HTTPS",
 )
 
@@ -553,7 +500,6 @@ edge(
     entryX=0,
     entryY=0.75,
     color=COLOR_CONFIG_GOLD,
-    color_dark=COLOR_CONFIG_GOLD_DARK,
     style="dashed",
     label="Load Config",
     waypoints=[(372, 370), (372, 200)],
@@ -653,7 +599,6 @@ edge(
     entryX=0,
     entryY=0.65,
     color=COLOR_ORCH_PURPLE,
-    color_dark=COLOR_ORCH_PURPLE_DARK,
     style="dotted",
     label="Consume",
     waypoints=[(890, 380), (890, 419)],
@@ -669,7 +614,6 @@ edge(
     entryX=0,
     entryY=0.72,
     color=COLOR_ORCH_PURPLE,
-    color_dark=COLOR_ORCH_PURPLE_DARK,
     label="Write Result",
     waypoints=[(755, 272), (888, 272), (888, 215)],
     label_x=0,
@@ -688,7 +632,6 @@ edge(
     entryX=1,
     entryY=0.5,
     color=COLOR_DATASTORE_NAVY,
-    color_dark=COLOR_DATASTORE_NAVY_DARK,
     style="dashed",
     label="Replicate",
     waypoints=[(1250, 234), (1250, 514)],
@@ -709,9 +652,6 @@ box(
     fill="#ffffff",
     stroke="#cccccc",
     fontColor="#444444",
-    fill_dark="#1a1a1a",
-    stroke_dark="#555555",
-    fontColor_dark="#cccccc",
     fontSize=10,
     bold=False,
     valign="middle",

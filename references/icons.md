@@ -16,11 +16,10 @@ about 11,500 names in total — `--dump-names --family aws` lists them all, and 
 of them works. For a logo draw.io has no stencil for (Snowflake, Databricks, a
 client's brand mark), use `svg_icon("path/to/logo.svg")` instead.
 
-**Dark mode.** The `fill` column is the vendor's brand colour. AWS and Kubernetes
+**Colour.** The `fill` column is the vendor's brand colour. AWS and Kubernetes
 render as a coloured tile with a white glyph, so they read on either canvas.
-GCP and Cisco are monochrome and take a `fill` you can theme with `ld()`. Azure
-icons are fixed-colour SVG files and cannot be recoloured — put one in an
-`icon_box()` if it washes out.
+GCP and Cisco are monochrome and take whatever `fill` you pass. Azure icons are
+fixed-colour SVG files and cannot be recoloured at all.
 
 
 ## AWS — `aws-*` (51)

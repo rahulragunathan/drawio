@@ -48,41 +48,31 @@ These are non-negotiable; the validator, the example, and the helpers all assume
 - **Subheadings use `sub()`** — italicised Title Case with an explicit `font-size` in the span style. Without explicit `font-size`, draw.io Desktop drops back to its default and the diagram looks inconsistent.
 - **Description bodies use `desc()`** — sentence case, non-bold, with explicit `font-size`. Same round-trip reason.
 - **Reserve horizontal corridors and vertical sub-channels** for parallel flows. Two edges sharing a corridor must offset by at least 5 px on the perpendicular axis (OVERLAP fires below 1.5 px tolerance, but 5 px gives comfortable visual separation).
-- **Choose colours for contrast and clarity**, and keep them legible in whichever theme the diagram ships in. Use `ld()` / `light-dark()` where a colour would wash out in light or dark mode; a single colour is fine when it already contrasts. See "Colour: contrast and clarity" below.
-- **Edge labels are verb-first and theme-aware.** Prefer imperatives ("Call OCR", "Publish events", "Reads index") over noun fragments ("OCR call"); stack long labels into narrow `<div>` lines to fit the channel; let `edge()` colour the label to match its (dark) stroke.
+- **Choose colours for contrast and clarity.** One colour per category; let draw.io handle its own dark theme. See "Colour: contrast and clarity" below.
+- **Edge labels are verb-first.** Prefer imperatives ("Call OCR", "Publish events", "Reads index") over noun fragments ("OCR call"); stack long labels into narrow `<div>` lines to fit the channel.
 - **Keep the legend lean.** Colour + labels carry the meaning. Only state what a reader can't infer — in practice just "grey/dashed shape = future state", and nothing at all if there are no future shapes. Don't enumerate line styles the diagram uses.
 
-## Colour: contrast and clarity (and dark mode)
+## Colour: contrast and clarity
 
-**The goal is clear contrast and legibility — not a particular palette.** Colours exist to separate categories and let a reader follow flow at a glance. Pick whatever reads cleanly; you do **not** need a dark/neon scheme. Two things break legibility in practice, and both are easy to avoid:
+**The goal is clear contrast and legibility — not a particular palette.** Colours exist to separate categories and let a reader follow flow at a glance. Pick whatever reads cleanly.
 
-- **Low contrast against the canvas.** Pale fills (`#fff4d6`, `#eaf3fb`) and near-black label text disappear on a dark background; very light text vanishes on a light one.
-- **A palette that only works in one theme.** draw.io Desktop is commonly viewed/exported in **dark mode**, so a scheme tuned only for the light canvas can fail there.
+- **Emit one colour per thing.** Do not hand-author a dark variant. draw.io inverts colours for its own dark theme, and it does that better than the skill's previous `light-dark()` handling did — measured by exporting the same diagram both ways.
+- **Never set an explicit colour on an edge label.** An explicit `<font color>` opts the label out of draw.io's inversion, which is exactly how a label ends up as dark text on a dark canvas. `edge()` no longer emits one.
+- **Match text to its fill.** White text on a pale fill is unreadable in any theme; that is a plain contrast question, not a theme question.
+- **`validate.py` ignores colour entirely** and `preview.py` renders an approximation. A clean validate says **nothing** about whether the diagram is legible — render the PNG and look at it.
 
-`light-dark()` is the mechanism for keeping contrast across *both* themes — it is not a mandate to go neon:
+A starting palette. Substitute your own categories:
 
-- **Use `light-dark(light, dark)` for fills, strokes, and label text** when a colour wouldn't read in both themes. The `ld()` helper builds it: `ld('#0078d4', '#4da3ff')` → `light-dark(#0078d4,#4da3ff)`. draw.io renders the first value in light mode, the second in dark. The dark value should be chosen for **contrast and clarity** — usually a brighter or lighter variant of the *same hue* (e.g. navy → light steel-blue), not a clashing neon. Saturated accents are fine if they read well, but they're a choice, not a requirement.
-- **A single colour is fine when it already contrasts in the target theme.** Mid-bright colours (green `#34a853`, orange `#d04a02`, teal `#008272`) read in both themes and need no `_dark` variant. Only add one where a colour actually washes out.
-- **The helpers take `*_dark` arguments.** `box()` / `container()` accept `fill_dark`, `stroke_dark`, `fontColor_dark`; `edge()` accepts `color_dark` (and `label_color_dark`). Supply a dark value only where it improves contrast; otherwise leave it single-colour.
-- **Match text to its fill.** A light dark-fill needs dark `fontColor_dark` (and vice-versa); white text on a pale fill is unreadable.
-- **`edge()` auto-themes the label.** When `color_dark` (or `label_color_dark`) is set, the label is wrapped in `light-dark(#000000, <dark>)` so it reads on dark and binds to its arrow colour.
-- **Neither validate nor preview judges contrast.** `light-dark()` is a runtime function; `preview.py` renders the light value only and `validate.py` ignores colour entirely. A clean validate and a good preview say **nothing** about whether either theme is legible — confirm contrast by eye in a draw.io Desktop export of the theme you ship.
-
-A starting palette. The dark column is a higher-contrast variant for the dark canvas — keep it in the same hue family for a calm result, or push it brighter if you want more pop. Substitute your own categories:
-
-| Category | Light | Dark variant (for contrast) |
-| --- | --- | --- |
-| Source / primary cloud | `#0078d4` | `#4da3ff` (lighter blue) |
-| Config / repo | `#bf8f00` | `#ffd966` (lighter gold) |
-| Orchestrator / pipeline | `#5b3fbf` | `#b59dff` (lighter purple) |
-| Worker / compute (pale fill) | `#8e7cc3` | `#cbbcff` (lighter lavender, dark text) |
-| Datastore / index | `#003c71` | `#7fb3e6` (light steel-blue) |
-| Downstream consumer | `#9c27b0` | `#d18cff` (lighter violet) |
-| Frontend / users | `#34a853` | *(reads in both — keep single)* |
-| Gateway | `#d04a02` | *(reads in both — keep single)* |
-| Future-state shape | `#e0e0e0` fill, `#9e9e9e` stroke, `dashed=1` | *(grey/dashed in both themes)* |
-
-(Bright accents like hot-pink or cyan also work if you prefer them — the rule is contrast, not restraint.)
+| Category | Colour |
+| --- | --- |
+| Source / primary cloud | `#0078d4` |
+| Config / repo | `#bf8f00` |
+| Orchestrator / pipeline | `#5b3fbf` |
+| Datastore / index | `#003c71` |
+| Downstream consumer | `#9c27b0` |
+| Frontend / users | `#34a853` |
+| Gateway | `#d04a02` |
+| Future-state shape | `#e0e0e0` fill, `#9e9e9e` stroke, `dashed=1` |
 
 ## Layout & semantics
 
@@ -124,18 +114,18 @@ The geometric thresholds (interior buffer, orthogonal tolerance, minimum overlap
 
 ## Suggested colour palette
 
-Source-coloured arrows work best when each box belongs to one semantic category. Substitute your own categories — the constants below are illustrative. Each light constant has an optional `_DARK` variant chosen for contrast on the dark canvas (see "Colour: contrast and clarity"); pass it as `fill_dark` / `color_dark` where the base colour would wash out.
+Source-coloured arrows work best when each box belongs to one semantic category. Substitute your own categories — the constants below are illustrative.
 
-| Constant | Light | `_DARK` (for contrast) | Suggested for |
-| --- | --- | --- | --- |
-| `COLOR_PRIMARY_BLUE` | `#0078d4` | `#4da3ff` | External clients, primary cloud / SaaS infrastructure |
-| `COLOR_FUTURE_GREY` | `#9e9e9e` | *(grey both themes)* | Future-state / out-of-scope shapes and arrows |
-| `COLOR_CONFIG_GOLD` | `#bf8f00` | `#ffd966` | Configuration source, git repo, secrets |
-| `COLOR_ORCH_PURPLE` | `#5b3fbf` | `#b59dff` | Orchestrator, background worker, pipeline (stroke colour — the pale `#8e7cc3` fill is too light as a line) |
-| `COLOR_FRONTEND_GREEN` | `#34a853` | *(reads in both — keep)* | User-facing / frontend service |
-| `COLOR_DATASTORE_NAVY` | `#003c71` | `#7fb3e6` | Datastore, index, queue, cache |
-| `COLOR_GATEWAY_ORANGE` | `#d04a02` | *(reads in both — keep)* | Gateway, service mesh, auth tier |
-| `COLOR_CONSUMER_PURPLE` | `#9c27b0` | `#d18cff` | External consumer / downstream subscriber |
+| Constant | Colour | Suggested for |
+| --- | --- | --- |
+| `COLOR_PRIMARY_BLUE` | `#0078d4` | External clients, primary cloud / SaaS infrastructure |
+| `COLOR_FUTURE_GREY` | `#9e9e9e` | Future-state / out-of-scope shapes and arrows |
+| `COLOR_CONFIG_GOLD` | `#bf8f00` | Configuration source, git repo, secrets |
+| `COLOR_ORCH_PURPLE` | `#5b3fbf` | Orchestrator, background worker, pipeline (stroke colour — the pale `#8e7cc3` fill is too light as a line) |
+| `COLOR_FRONTEND_GREEN` | `#34a853` | User-facing / frontend service |
+| `COLOR_DATASTORE_NAVY` | `#003c71` | Datastore, index, queue, cache |
+| `COLOR_GATEWAY_ORANGE` | `#d04a02` | Gateway, service mesh, auth tier |
+| `COLOR_CONSUMER_PURPLE` | `#9c27b0` | External consumer / downstream subscriber |
 
 ## Routing strategy
 
@@ -175,7 +165,7 @@ The validator is a 2D geometric check with a few known blind spots. None of thes
 - **CJK and heavily-styled HTML labels.** Width estimation uses `5.5 px/char` calibrated for Latin sans-serif at fontSize 10. Chinese/Japanese/Korean characters are wider; HTML tags are stripped before counting but `<font>`/`<b>`/inline styles aren't measured. For diagrams with mostly-CJK labels, expect occasional false negatives on LABEL_OVERLAP and tune `label_x`/`label_y` by hand.
 - **Edge ordering matters for layering.** Boxes must be emitted before edges in the XML for labels to render on top. The bundled `edge()` helper relies on the caller to call `box()` first.
 - **A clean validate says nothing about whether labels have *room*.** `SHORT_LABELLED_EDGE` catches the extreme case (label wider than its whole edge), but a label that technically fits in a 50 px column gap while looking cramped, or one whose estimated width is a character or two off the truth, passes silently. Render the PNG and look at it — that pass catches label-geometry problems no check sees.
-- **Colour, contrast, and dark-mode legibility are invisible to the validator.** It ignores colour entirely, and `light-dark()` is a runtime function. A clean validate says nothing about whether either theme is readable — see "Colour: contrast and clarity". `preview.py` renders the light theme only.
+- **Colour and contrast are invisible to the validator.** It ignores colour entirely. A clean validate says nothing about whether the diagram is readable — render the PNG and look at it.
 - **Semantic correctness is a human review item.** A managed service drawn inside a cluster zone, a mislabeled flow, or the wrong trust boundary all validate fine. "Validates clean" is necessary, not sufficient — the finishing pass (theme, label wording, zone membership, balance) is done by eye in Desktop.
 - **Desktop round-trip artifacts are normal.** After hand-editing in draw.io Desktop, a re-saved file picks up fractional `entryX`/`exitX` (e.g. `0.911`), explicit `entryPerimeter=0`, `sourcePoint`/`targetPoint` mxPoints, separate `edgeLabel` child cells, and `host="Electron"`. These are harmless — don't "fix" them. Treat the generator output as a clean, validated **baseline to refine in Desktop**; if you need to change it, regenerate from the script rather than diffing against the hand-tuned XML.
 

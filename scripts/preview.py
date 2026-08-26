@@ -29,6 +29,7 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
+    import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
     from matplotlib.patches import FancyBboxPatch, Rectangle
 except ImportError:
@@ -43,16 +44,26 @@ from validate import (  # noqa: E402
 )
 
 
-def light(value: str) -> str:
-    """Extract the light-mode colour from a draw.io colour value.
+# Drawn in place of any colour matplotlib cannot parse.
+FALLBACK_COLOUR = "#b0b0b0"
 
-    `light-dark(#0078d4,#ff66b3)` -> `#0078d4`; a plain colour passes
-    through. preview.py renders the LIGHT theme only — judge dark-mode
-    contrast in draw.io Desktop (see SKILL.md 'Colour: contrast and clarity').
+
+def light(value: str) -> str:
+    """Return a colour matplotlib can draw, or a neutral grey.
+
+    The preview is a layout check, not a colour proof, so an unusable value
+    must never abort the render. draw.io accepts things matplotlib does not —
+    `default`, gradient values, and colour functions — and a hand-edited file
+    can contain anything. A wrong-coloured box still shows the geometry; a
+    traceback shows nothing.
     """
-    if value and value.strip().startswith("light-dark("):
-        inner = value.strip()[len("light-dark(") :].rstrip(")")
-        return inner.split(",", 1)[0].strip()
+    if not value:
+        return FALLBACK_COLOUR
+    value = value.strip()
+    try:
+        mcolors.to_rgba(value)
+    except (ValueError, TypeError):
+        return FALLBACK_COLOUR
     return value
 
 

@@ -172,12 +172,14 @@ Hard-won lessons that are easy to accidentally undo. Read before changing
   reclassified containers with a different stroke as solid boxes, producing
   false `CROSSING`. Future-state *shapes* are also dashed but use
   `verticalAlign=middle`, so they don't match.
-- **Colours go through `ld()` / `light-dark()` for dark mode.** Desktop
-  exports in dark mode, where pale fills and dark text fail. `box()` /
-  `container()` take `*_dark` args; `edge()` takes `color_dark` and
-  auto-themes the label. `validate.py` ignores colour; `preview.py` renders
-  the LIGHT value only (it strips `light-dark(l,d)` to `l`) — so neither
-  catches a dark-contrast problem. That's a Desktop-eyeball check, by design.
+- **The skill emits one colour per thing and does not theme for dark mode.**
+  It used to, via `light-dark()`. Removed in 1.3.0 after measuring: draw.io
+  inverts colours for its own dark theme, and the manual handling produced a
+  WORSE dark render, because an explicit `<font color>` on an edge label opts
+  that label out of the inversion and pins dark text onto a dark canvas.
+  `preview.py` still unwraps `light-dark(l,d)` so diagrams authored before
+  the change keep working. `validate.py` ignores colour entirely, so contrast
+  remains an eyeball check on a real render.
 - **Width estimation is char-count based** (`LABEL_PER_CHAR_PX = 5.5`,
   Latin sans-serif at fontSize 10). CJK / heavily-styled HTML labels are
   approximate — see SKILL.md Limitations. Tune the module constants at the
