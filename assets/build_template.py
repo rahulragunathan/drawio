@@ -27,6 +27,7 @@ allocation here (e.g. "y=225 lane — pipeline fan-in; x=850 channel — app
 """
 
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from xml.dom import minidom
 
 
@@ -34,13 +35,13 @@ from xml.dom import minidom
 # Source-based colour palette. Each arrow takes its source box's colour.
 # Categories below are illustrative — substitute your own semantic groups.
 #
-# Goal: clear contrast and legibility — not a particular palette. draw.io
-# Desktop is usually viewed/exported in dark mode, where pale fills and
-# near-black text wash out, so emit colours via light-dark(light, dark) (see
-# ld() and the *_DARK constants) WHERE a colour wouldn't read in both themes.
-# The dark value is a higher-contrast variant — usually a brighter/lighter
-# tint of the same hue (bright accents work too, if you prefer them). Colours
-# that already contrast in both themes (green, orange) stay single-colour.
+# Goal: clear contrast and legibility — not a particular palette. Pick colours
+# that separate categories and let a reader follow flow at a glance.
+#
+# Emit one colour per thing and let draw.io handle its own dark theme: its
+# export inverts colours automatically, and doing so by hand produced a WORSE
+# dark render than leaving it alone (an explicit colour opts a label out of
+# that inversion, pinning dark text onto a dark canvas).
 #
 # COLOR_ORCH_PURPLE is a stroke colour rather than a fill: the matching pale
 # fill #8e7cc3 is too light to read as a line.
@@ -53,19 +54,6 @@ COLOR_FRONTEND_GREEN = "#34a853"  # User-facing / frontend
 COLOR_DATASTORE_NAVY = "#003c71"  # Datastore / index
 COLOR_GATEWAY_ORANGE = "#d04a02"  # Gateway / service mesh
 COLOR_CONSUMER_PURPLE = "#9c27b0"  # External consumer / subscriber
-
-# Dark-mode contrast variants (pass as fill_dark / stroke_dark / color_dark).
-# Lighter/brighter tints of the same hue — calm but legible on dark.
-COLOR_PRIMARY_BLUE_DARK = "#4da3ff"  # lighter blue
-COLOR_CONFIG_GOLD_DARK = "#ffd966"  # lighter gold
-COLOR_ORCH_PURPLE_DARK = "#b59dff"  # lighter purple
-COLOR_WORKER_PURPLE = "#8e7cc3"  # pale worker fill ...
-COLOR_WORKER_PURPLE_DARK = "#cbbcff"  # ... lighter lavender (use dark text)
-COLOR_DATASTORE_NAVY_DARK = "#7fb3e6"  # light steel-blue
-COLOR_CONSUMER_PURPLE_DARK = "#d18cff"  # lighter violet
-# Green (#34a853) and orange (#d04a02) read in both themes; leave them
-# single-colour unless a specific diagram needs otherwise.
-
 
 # --------------------------------------------------------------------------
 # Canvas dimensions. Adjust to fit your content.
@@ -112,40 +100,12 @@ def cell_id():
 # --------------------------------------------------------------------------
 # Primitives.
 # --------------------------------------------------------------------------
-def ld(light, dark=None):
-    """Theme colour via draw.io's light-dark() function.
-
-    ld('#0078D4')            -> '#0078D4'                     (single colour)
-    ld('#0078D4', '#FF66B3') -> 'light-dark(#0078D4,#FF66B3)' (light / dark)
-
-    draw.io renders the first value in light mode, the second in dark. Pass a
-    dark value wherever a fill, stroke, or label would wash out on the dark
-    canvas. NOTE: light-dark() is a runtime function — preview.py shows only
-    the light value, so judge dark contrast in draw.io Desktop.
-    """
-    return f"light-dark({light},{dark})" if dark else light
-
-
-def container(
-    x,
-    y,
-    w,
-    h,
-    title,
-    stroke,
-    fill="#ffffff",
-    fontColor=None,
-    fontSize=14,
-    fill_dark=None,
-    stroke_dark=None,
-    fontColor_dark=None,
-):
-    """Dashed-edge zone group. Emit BEFORE the boxes that sit inside it.
-    Pass *_dark values for dark-mode-safe fills/strokes/title text."""
+def container(x, y, w, h, title, stroke, fill="#ffffff", fontColor=None, fontSize=14):
+    """Dashed-edge zone group. Emit BEFORE the boxes that sit inside it."""
     cid = cell_id()
-    fillC = ld(fill, fill_dark)
-    strokeC = ld(stroke, stroke_dark)
-    fontC = ld(fontColor or stroke, fontColor_dark or stroke_dark)
+    fillC = fill
+    strokeC = stroke
+    fontC = fontColor or stroke
     style = (
         f"rounded=0;whiteSpace=wrap;html=1;"
         f"fillColor={fillC};strokeColor={strokeC};strokeWidth=2;"
@@ -184,9 +144,6 @@ def box(
     spacingTop=0,
     spacingLeft=0,
     dashed=False,
-    fill_dark=None,
-    stroke_dark=None,
-    fontColor_dark=None,
 ):
     """Solid rectangle. Supports HTML in `text` (with &lt;b&gt; etc.).
 
@@ -195,13 +152,11 @@ def box(
     convention and the legend. verticalAlign stays 'middle' so the validator
     won't mistake a dashed box for a container.
 
-    Pass fill_dark / stroke_dark / fontColor_dark for dark-mode accents; they
-    route through ld() into light-dark(). A box keeps its single colour if no
-    dark value is given."""
+    """
     cid = cell_id()
-    fillC = ld(fill, fill_dark)
-    strokeC = ld(stroke or fill, stroke_dark or fill_dark)
-    fontC = ld(fontColor, fontColor_dark)
+    fillC = fill
+    strokeC = stroke or fill
+    fontC = fontColor
     style = (
         f"rounded=1;whiteSpace=wrap;html=1;"
         f"fillColor={fillC};strokeColor={strokeC};strokeWidth=1;"
@@ -246,23 +201,22 @@ def edge(
     entryY=None,
     label_x=None,
     label_y=None,
-    color_dark=None,
     jump=False,
     bidirectional=False,
     end_arrow=True,
-    label_color_dark=None,
 ):
     """Orthogonal edge with optional waypoints and label offset.
 
-    color_dark        — dark-mode stroke accent (light-dark via ld()).
     jump=True         — add jumpStyle=gap so this edge hops crossed lines
                         instead of being rerouted (cheap crossing fix).
     bidirectional=True— arrowheads on both ends (request/response, R/W).
     end_arrow=False   — no end arrowhead (connector / bus / merge line).
-    The label is auto-wrapped in a light-dark <font> when a dark colour is
-    available (label_color_dark, else color_dark), so it reads on dark and
-    binds to its arrow. Prefer verb-first labels ('Call OCR', 'Reads index')
-    and stacked <div> words in tight channels."""
+    Prefer verb-first labels ('Call OCR', 'Reads index') and stacked <div>
+    words in tight channels.
+
+    The label carries no explicit font colour. draw.io inverts colours for its
+    own dark theme, and an explicit <font color> opts the label OUT of that,
+    which is how it ends up as dark text on a dark canvas."""
     cid = cell_id()
     dash = ""
     if style == "dashed":
@@ -277,7 +231,7 @@ def edge(
         if entryX is not None
         else ""
     )
-    strokeC = ld(color, color_dark)
+    strokeC = color
     end_str = "endArrow=classic;endFill=1;" if end_arrow else "endArrow=none;"
     start_str = "startArrow=classic;startFill=1;" if bidirectional else ""
     style_str = (
@@ -289,9 +243,6 @@ def edge(
         f"fontColor={strokeC};labelBackgroundColor=#ffffff;"
     )
     value = label or ""
-    dark_label = label_color_dark or color_dark
-    if label and dark_label:
-        value = f'<font color="light-dark(#000000,{dark_label})">{label}</font>'
     c = ET.SubElement(
         root,
         "mxCell",
@@ -317,6 +268,184 @@ def edge(
             **{"as": "offset"},
         )
     return cid
+
+
+# --------------------------------------------------------------------------
+# Vendor icons.
+#
+# Names and fill colours come from references/icons.md in the skill; pass a
+# key as "<family>:<name>", e.g. "aws:lambda". `list_icons.py --search redis`
+# finds one. Any of draw.io's ~11,500 names works, not just the curated list.
+#
+# Two placements:
+#   icon_box()  — glyph inside a labelled card. The card keeps the exact
+#                 geometry, anchors and routing behaviour of a plain box().
+#   icon_node() — bare glyph with its name underneath, the vendor-docs look.
+#
+# For a logo draw.io has no stencil for (Snowflake, a client's mark), pass
+# svg_icon("path/to/logo.svg") in place of the key.
+# --------------------------------------------------------------------------
+ICON_NODE_SIZE = 48  # icon_node() glyph edge, px
+ICON_BOX_SIZE = 28  # icon_box() child glyph edge, px
+ICON_BOX_INSET = 10  # px from the card's left edge to the glyph
+ICON_TEXT_GAP = 8  # px between glyph and the card's text
+
+# kind, name prefix, wrapper shape, wrapper's glyph key, key takes a bare name
+ICON_FAMILIES = {
+    "aws": ("stencil", "mxgraph.aws4.", "mxgraph.aws4.resourceIcon", "resIcon", False),
+    "gcp": ("stencil", "mxgraph.gcp3.", None, None, False),
+    "k8s": (
+        "stencil",
+        "mxgraph.kubernetes.",
+        "mxgraph.kubernetes.icon2",
+        "prIcon",
+        True,
+    ),
+    "azure": ("image", "img/lib/azure2/", None, None, False),
+    "cisco": ("stencil", "mxgraph.cisco19.", None, None, False),
+    "net": ("stencil", "mxgraph.networks.", None, None, False),
+}
+
+
+class Svg(str):
+    """An embedded SVG data URI, as returned by svg_icon()."""
+
+
+def svg_icon(path):
+    """Embed a local SVG so the diagram carries its own artwork.
+
+    draw.io wants "data:image/svg+xml,<base64>" — a comma, then raw base64.
+    NOT ";base64,": a style string is ";"-delimited, so that spelling ends
+    the token early and the icon renders blank. Verified by rendering both.
+    """
+    import base64
+
+    data = (
+        Path(path).read_bytes() if isinstance(path, Path) else open(path, "rb").read()
+    )
+    return Svg("data:image/svg+xml," + base64.b64encode(data).decode())
+
+
+def icon_style(icon, placement="node", fill=None, font_color="#232F3E", font_size=11):
+    """Build the style for one glyph.
+
+    Knows the stencil-vs-image split so the emitters do not have to. Image
+    families (Azure, and any embedded SVG) ship as fixed-colour SVG files, so
+    `fill` does not apply to them.
+    """
+    common = "sketch=0;outlineConnect=0;dashed=0;html=1;aspect=fixed;"
+    if placement == "node":
+        label = (
+            f"labelPosition=center;verticalLabelPosition=bottom;"
+            f"align=center;verticalAlign=top;fontSize={font_size};"
+            f"fontStyle=0;fontColor={font_color};"
+        )
+    else:
+        # Inside a card: the card owns the text, so this cell must never
+        # acquire a caption, and must not be draggable out of its parent.
+        label = (
+            "labelPosition=center;verticalLabelPosition=middle;"
+            "verticalAlign=middle;align=center;pointerEvents=0;"
+            "movable=0;resizable=0;rotatable=0;editable=0;connectable=0;"
+            "drawioSkillRole=icon;"
+        )
+
+    if isinstance(icon, Svg) or str(icon).startswith("data:"):
+        return f"shape=image;imageAspect=0;points=[];{common}{label}image={icon};"
+
+    family, _, name = str(icon).partition(":")
+    kind, prefix, wrapper, glyph_key, bare = ICON_FAMILIES[family]
+    if kind == "image":
+        return (
+            f"shape=image;imageAspect=0;points=[];{common}{label}image={prefix}{name};"
+        )
+
+    qualified = name if "." in name else prefix + name
+    paint = f"fillColor={fill};" if fill else ""
+    if wrapper:
+        # A tile wrapper draws a white glyph on a coloured plate, so it reads
+        # on either canvas; strokeColor is the glyph itself.
+        return (
+            f"{common}{label}strokeColor=#ffffff;{paint}"
+            f"shape={wrapper};{glyph_key}={name if bare else qualified};"
+        )
+    return f"{common}{label}{paint}shape={qualified};"
+
+
+def icon_node(x, y, label, icon, size=ICON_NODE_SIZE, **kw):
+    """Bare vendor glyph with its name rendered underneath.
+
+    Never pass a dashed style here: dashed + verticalAlign=top is exactly the
+    validator's container signature, and the glyph would be read as a zone.
+    Grey the fill for a future-state icon instead.
+    """
+    cid = cell_id()
+    c = ET.SubElement(
+        root,
+        "mxCell",
+        id=cid,
+        value=label,
+        style=icon_style(icon, "node", **kw),
+        vertex="1",
+        parent="1",
+    )
+    ET.SubElement(
+        c,
+        "mxGeometry",
+        x=str(x),
+        y=str(y),
+        width=str(size),
+        height=str(size),
+        **{"as": "geometry"},
+    )
+    return cid
+
+
+def icon_box(
+    x,
+    y,
+    w,
+    h,
+    text,
+    fill,
+    icon,
+    icon_size=ICON_BOX_SIZE,
+    icon_inset=ICON_BOX_INSET,
+    icon_fill=None,
+    **kw,
+):
+    """Labelled card with a vendor glyph inside it, text to the right.
+
+    The card is an ordinary box() — same geometry, anchors and routing — so
+    icons cost nothing in layout terms. The glyph is a child cell, because a
+    stencil is a registered shape and cannot be fed to image=; being a child
+    is also what keeps it attached when the card is moved in Desktop.
+
+    Text is left-aligned: centring it would run under the glyph.
+    """
+    kw.setdefault("halign", "left")
+    kw.setdefault("spacingLeft", icon_inset + icon_size + ICON_TEXT_GAP)
+    parent = box(x, y, w, h, text, fill, **kw)
+    child = cell_id()
+    c = ET.SubElement(
+        root,
+        "mxCell",
+        id=child,
+        value="",
+        style=icon_style(icon, "box", fill=icon_fill),
+        vertex="1",
+        parent=parent,
+    )
+    ET.SubElement(
+        c,
+        "mxGeometry",
+        x=str(icon_inset),
+        y=str((h - icon_size) / 2),
+        width=str(icon_size),
+        height=str(icon_size),
+        **{"as": "geometry"},
+    )
+    return parent
 
 
 def sub(text, size=11):

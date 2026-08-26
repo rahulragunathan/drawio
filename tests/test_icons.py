@@ -55,3 +55,60 @@ def test_catalog_keys_use_a_known_family_prefix():
     for key, entry in list_icons.load_catalog().items():
         assert entry["family"] in list_icons.FAMILIES, key
         assert key.startswith(entry["family"] + "-"), key
+
+
+def load_template_helpers():
+    """Exec the template's helper section, stopping at the diagram marker.
+
+    build_template.py is meant to be copied, not imported — it writes a file
+    when run — so the helpers are loaded by executing only the part above
+    "YOUR DIAGRAM GOES HERE". That keeps these tests on the real template
+    code rather than a re-vendored copy that could drift from it.
+    """
+    src = (SKILL_ROOT / "assets" / "build_template.py").read_text()
+    head = src.split("# === YOUR DIAGRAM GOES HERE ===")[0]
+    ns: dict = {}
+    exec(compile(head, "build_template.py", "exec"), ns)  # noqa: S102
+    return ns
+
+
+def test_icon_style_renders_an_aws_tile_through_its_wrapper():
+    style = load_template_helpers()["icon_style"]("aws:lambda", fill="#ED7100")
+
+    assert "shape=mxgraph.aws4.resourceIcon;" in style
+    assert "resIcon=mxgraph.aws4.lambda;" in style
+    assert "fillColor=#ED7100;" in style
+    # Never dashed + top-aligned together: that pair is the validator's
+    # container signature and would reclassify the icon as a zone.
+    assert not ("dashed=1;" in style and "verticalAlign=top;" in style)
+
+
+def test_icon_style_uses_a_bare_pricon_for_kubernetes():
+    style = load_template_helpers()["icon_style"]("k8s:pod")
+
+    assert "shape=mxgraph.kubernetes.icon2;" in style
+    assert "prIcon=pod;" in style
+
+
+def test_icon_style_emits_an_image_shape_for_azure():
+    style = load_template_helpers()["icon_style"]("azure:compute/Function_Apps.svg")
+
+    # Must be "shape=image", never a bare "image;" token: parse_style drops
+    # tokens without "=", so the bare form loses the shape marker entirely.
+    assert "shape=image;" in style
+    assert "image=img/lib/azure2/compute/Function_Apps.svg;" in style
+
+
+def test_svg_icon_embeds_base64_with_no_semicolon_in_the_payload(tmp_path):
+    helpers = load_template_helpers()
+    svg = tmp_path / "logo.svg"
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>')
+
+    style = helpers["icon_style"](helpers["svg_icon"](svg))
+
+    # Verified by rendering: draw.io accepts "data:image/svg+xml,<base64>".
+    # The ";base64," spelling renders blank, because ";" ends the style token.
+    assert "image=data:image/svg+xml," in style
+    assert ";base64," not in style
+    payload = style.split("image=data:image/svg+xml,")[1].split(";")[0]
+    assert payload and ";" not in payload
