@@ -70,8 +70,9 @@ Three things worth knowing:
 than inside it, so the archive never contains a stale copy of itself. It
 excludes every hidden entry by rule rather than by name — `.git`, `.venv`,
 `.gitignore`, `.DS_Store` and the tool caches have all leaked into hand-built
-archives before — along with `renders/` and `__pycache__`. Do not build the
-zip by hand; the exclusion list is the part that goes wrong.
+archives before — along with `renders/`, `__pycache__` and `archive/` (prior-art
+feedback: history, not part of the skill a user installs). Do not build the zip
+by hand; the exclusion list is the part that goes wrong.
 
 ## Environment notes (esp. in a Cowork / VM sandbox)
 

@@ -62,3 +62,11 @@ def test_the_skill_itself_is_complete(tmp_path):
         "drawio/examples/snowflake.svg",
     ):
         assert required in names, required
+
+
+def test_the_feedback_archive_is_not_packaged(tmp_path):
+    # archive/ is prior-art feedback kept for maintainers. It is history, not
+    # part of the skill a user installs.
+    _out, names = _build(tmp_path)
+
+    assert not any(n.startswith("drawio/archive/") for n in names)
