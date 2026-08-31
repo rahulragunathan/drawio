@@ -19,6 +19,7 @@ drawio/
 ├── README.md                         ← This file
 ├── CONTRIBUTING.md                   ← Maintainer loop (refine / package / install)
 ├── CHANGELOG.md                      ← Version history
+├── LICENSE                           ← MIT
 ├── pytest.ini · ruff.toml · requirements*.txt
 ├── scripts/
 │   ├── validate.py                   ← Geometric validator (9 checks)
@@ -89,3 +90,13 @@ and no draw.io install is needed to *generate* a diagram: the artwork lives in
 draw.io itself, and the names it accepts ship with this skill in
 `assets/icon_names.txt.gz`, extracted from a draw.io Desktop build (Apache-2.0).
 No draw.io artwork is redistributed here.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+`assets/icon_names.txt.gz` is a list of icon *names* extracted from a draw.io
+Desktop build ([drawio-desktop](https://github.com/jgraph/drawio-desktop),
+Apache-2.0). It contains no draw.io artwork: the skill references stencils by
+name and draw.io draws them. The one embedded logo, `examples/snowflake.svg`,
+was drawn for the example.
