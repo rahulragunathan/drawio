@@ -205,8 +205,10 @@ Hard-won lessons that are easy to accidentally undo. Read before changing
   inverts colours for its own dark theme, and the manual handling produced a
   WORSE dark render, because an explicit `<font color>` on an edge label opts
   that label out of the inversion and pins dark text onto a dark canvas.
-  `preview.py` still unwraps `light-dark(l,d)` so diagrams authored before
-  the change keep working. `validate.py` ignores colour entirely, so contrast
+  `preview.py` does NOT unwrap `light-dark(l,d)`: light() returns a neutral
+  grey for any colour matplotlib cannot parse, so a pre-1.3.0 diagram still
+  previews, but in grey rather than its authored colours. Render the PNG for
+  a faithful picture of an older file. `validate.py` ignores colour entirely, so contrast
   remains an eyeball check on a real render.
 - **Width estimation is char-count based** (`LABEL_PER_CHAR_PX = 5.5`,
   Latin sans-serif at fontSize 10). CJK / heavily-styled HTML labels are

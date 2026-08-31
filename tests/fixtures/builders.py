@@ -647,3 +647,30 @@ def build_edge_through_own_caption(path):
     _edge(root, counter, node, below, exitX=0.5, exitY=1, entryX=0.5, entryY=0)
     _write(mxfile, path)
     return path
+
+
+def build_label_over_icon_caption(path):
+    """An unrelated edge's label parked on top of an icon's caption.
+
+    The label sits below the glyph's shape rect and squarely inside its
+    caption band, while the edge itself stays well clear — so the only thing
+    wrong is the label covering another shape's text.
+    """
+    mxfile, root, counter = _new_doc()
+    _icon_node(root, counter, 400, 300, 48, "Fargate")
+    src = _box(root, counter, 200, 430, 60, 40, "S")
+    dst = _box(root, counter, 650, 430, 60, 40, "T")
+    _edge(
+        root,
+        counter,
+        src,
+        dst,
+        exitX=1,
+        exitY=0.5,
+        entryX=0,
+        entryY=0.5,
+        label="Sync",
+        label_offset=(0, -88),
+    )
+    _write(mxfile, path)
+    return path

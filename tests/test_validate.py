@@ -374,11 +374,60 @@ def test_label_width_scales_with_font_size():
 
 
 def test_an_edges_font_size_is_read_from_its_style(tmp_path):
-    from builders import build_clean
+    # Asserting the DEFAULT proves nothing: it is the one value that matches
+    # whether or not the style is read at all. A non-default size is the only
+    # version of this test that can fail.
     from validate import parse_drawio
 
     path = tmp_path / "d.drawio"
-    build_clean(path)
+    path.write_text(
+        "<mxfile><diagram><mxGraphModel><root>"
+        '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="2" style="rounded=1;" vertex="1" parent="1">'
+        '<mxGeometry x="0" y="0" width="50" height="50" as="geometry"/></mxCell>'
+        '<mxCell id="3" style="rounded=1;" vertex="1" parent="1">'
+        '<mxGeometry x="200" y="0" width="50" height="50" as="geometry"/></mxCell>'
+        '<mxCell id="4" value="L" style="edgeStyle=orthogonalEdgeStyle;fontSize=24;"'
+        ' edge="1" parent="1" source="2" target="3">'
+        '<mxGeometry relative="1" as="geometry"/></mxCell>'
+        "</root></mxGraphModel></diagram></mxfile>"
+    )
+
     _boxes, edges = parse_drawio(str(path))
 
-    assert edges[0].font_size == 10.0
+    assert edges[0].font_size == 24.0
+
+
+def test_a_label_covering_an_icon_caption_is_flagged(tmp_path):
+    # The caption band is part of what an edge label must not cover. Measuring
+    # the overlap against the bare shape rect makes a caption-band hit compute
+    # a negative height, so it is silently discarded as a graze.
+    from builders import build_label_over_icon_caption
+
+    v = validate(str(build_label_over_icon_caption(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"LABEL_BOX_OVERLAP"}
+
+
+def test_a_malformed_anchor_value_does_not_crash_the_parser(tmp_path):
+    # A generator that sets only half an anchor pair writes exitY=None into
+    # the style. The validator must report on the file, not die on it.
+    from validate import parse_drawio
+
+    path = tmp_path / "d.drawio"
+    path.write_text(
+        "<mxfile><diagram><mxGraphModel><root>"
+        '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="2" style="rounded=1;" vertex="1" parent="1">'
+        '<mxGeometry x="0" y="0" width="50" height="50" as="geometry"/></mxCell>'
+        '<mxCell id="3" style="rounded=1;" vertex="1" parent="1">'
+        '<mxGeometry x="200" y="0" width="50" height="50" as="geometry"/></mxCell>'
+        '<mxCell id="4" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=None;"'
+        ' edge="1" parent="1" source="2" target="3">'
+        '<mxGeometry relative="1" as="geometry"/></mxCell>'
+        "</root></mxGraphModel></diagram></mxfile>"
+    )
+
+    _boxes, edges = parse_drawio(str(path))
+
+    assert edges[0].exitY is None

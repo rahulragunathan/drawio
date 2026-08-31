@@ -334,6 +334,22 @@ def _absolute_origin(cid, raw, seen=None):
     return raw[parent]["x"] + px, raw[parent]["y"] + py
 
 
+def anchor_value(style: dict[str, str], key: str) -> float | None:
+    """Read one anchor coordinate, or None when it is absent or unusable.
+
+    A generator that sets half an anchor pair writes the literal string
+    "None" into the style. The validator's job is to report on such a file,
+    not to die while parsing it.
+    """
+    raw = style.get(key)
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
 def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
     tree = ET.parse(path)
     root = tree.getroot()
@@ -415,10 +431,10 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
                 style=style_d,
             )
         elif cell.get("edge") == "1":
-            ex = style_d.get("exitX")
-            ey = style_d.get("exitY")
-            entryX = style_d.get("entryX")
-            entryY = style_d.get("entryY")
+            ex = anchor_value(style_d, "exitX")
+            ey = anchor_value(style_d, "exitY")
+            entryX = anchor_value(style_d, "entryX")
+            entryY = anchor_value(style_d, "entryY")
             waypoints = []
             label_offset = (0.0, 0.0)
             src_point = dst_point = None
@@ -442,16 +458,17 @@ def parse_drawio(path: str) -> tuple[dict[str, Box], list[Edge]]:
                     cid,
                     cell.get("source"),
                     cell.get("target"),
-                    float(ex) if ex else None,
-                    float(ey) if ey else None,
-                    float(entryX) if entryX else None,
-                    float(entryY) if entryY else None,
+                    ex,
+                    ey,
+                    entryX,
+                    entryY,
                     waypoints,
                     cell.get("value") or "",
                     style_d.get("strokeColor", ""),
                     label_offset,
                     src_point,
                     dst_point,
+                    float(style_d.get("fontSize", BASE_FONT_SIZE)),
                 )
             )
     return boxes, edges
@@ -1058,9 +1075,14 @@ def validate(path: str) -> list[str]:
                 continue
             if bid == edge.src or bid == edge.dst:
                 continue
-            if rects_overlap(lb, box.obstacle_rect()):
-                ov_x = min(lb[2], box.x2) - max(lb[0], box.x)
-                ov_y = min(lb[3], box.y2) - max(lb[1], box.y)
+            # Measure against the SAME rect that was hit-tested. Using the
+            # bare shape here made every caption-band hit compute a negative
+            # height, so it was always discarded as a graze and the band was
+            # effectively unprotected from edge labels.
+            ox1, oy1, ox2, oy2 = box.obstacle_rect()
+            if rects_overlap(lb, (ox1, oy1, ox2, oy2)):
+                ov_x = min(lb[2], ox2) - max(lb[0], ox1)
+                ov_y = min(lb[3], oy2) - max(lb[1], oy1)
                 if min(ov_x, ov_y) < LABEL_BOX_MIN_OVERLAP:
                     continue  # a graze — masked by the label's white bg
                 box_label = short_label(box.label)

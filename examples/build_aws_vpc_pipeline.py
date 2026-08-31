@@ -224,6 +224,16 @@ def edge(
     The label carries no explicit font colour. draw.io inverts colours for its
     own dark theme, and an explicit <font color> opts the label OUT of that,
     which is how it ends up as dark text on a dark canvas."""
+    if (exitX is None) != (exitY is None):
+        raise ValueError(
+            "exitX and exitY must be given together — half a pair emits "
+            "'exitY=None' into the style, which is not a coordinate"
+        )
+    if (entryX is None) != (entryY is None):
+        raise ValueError(
+            "entryX and entryY must be given together — half a pair emits "
+            "'entryY=None' into the style, which is not a coordinate"
+        )
     cid = cell_id()
     dash = ""
     if style == "dashed":

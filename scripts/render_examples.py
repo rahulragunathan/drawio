@@ -30,7 +30,7 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from render_png import find_drawio_cli, render  # noqa: E402
-from validate import validate  # noqa: E402
+from validate import validate, violation_severity  # noqa: E402
 
 
 EXAMPLES_DIR = SKILL_ROOT / "examples"
@@ -78,13 +78,22 @@ def main() -> int:
 
             for diagram in diagrams:
                 violations = validate(str(diagram))
-                if violations:
-                    print(f"✗ {diagram.name}: {len(violations)} violation(s)")
-                    for v in violations:
-                        print(f"    {v}")
+                errors = [v for v in violations if violation_severity(v) == "error"]
+                warnings = [v for v in violations if v not in errors]
+
+                # Match validate.py's contract: errors block, warnings are
+                # advisory. Blocking on a warning would mean this tool
+                # disagrees with the validator about what is acceptable.
+                for w in warnings:
+                    print(f"  ⚠ {w}")
+                if errors:
+                    print(f"✗ {diagram.name}: {len(errors)} error(s)")
+                    for e in errors:
+                        print(f"    {e}")
                     failed.append(diagram.name)
                     continue
 
+                done = 0
                 for theme in THEMES:
                     out = RENDERS_DIR / f"{diagram.stem}-{theme}.png"
                     # render() narrates each CLI invocation; that detail is
@@ -93,11 +102,15 @@ def main() -> int:
                         ok = render(diagram, cli, out, theme=theme)
                     if ok:
                         written += 1
+                        done += 1
                     else:
                         failed.append(f"{diagram.name} ({theme})")
-                print(
-                    f"✓ {diagram.stem}: validated clean, rendered {len(THEMES)} themes"
-                )
+                if done == len(THEMES):
+                    print(f"✓ {diagram.stem}: validated, rendered {done} themes")
+                else:
+                    print(
+                        f"✗ {diagram.stem}: only {done}/{len(THEMES)} themes rendered"
+                    )
 
     print(f"\n{written} PNG(s) in {RENDERS_DIR.relative_to(SKILL_ROOT)}/")
     if failed:

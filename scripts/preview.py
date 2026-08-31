@@ -68,6 +68,19 @@ def light(value: str) -> str:
     return value
 
 
+def box_colours(style: dict) -> tuple[str, str]:
+    """(fill, stroke) for a box, both drawable.
+
+    A box with no strokeColor borders itself in its own fill. This cannot be
+    written as `light(style.get("strokeColor")) or fill`: light() always
+    returns a usable colour, so that fallback is unreachable and the box gets
+    the grey reserved for unparseable values.
+    """
+    fill = light(style.get("fillColor", "#cccccc"))
+    stroke = style.get("strokeColor")
+    return fill, light(stroke) if stroke else fill
+
+
 def text_anchor(box):
     """Where a box's label is drawn: (x, y, vertical_alignment).
 
@@ -207,7 +220,7 @@ def render(path, out_png):
             )
             continue
 
-        fill = light(sd.get("fillColor", "#cccccc"))
+        fill, stroke = box_colours(sd)
         box_ls = (0, (5, 3)) if sd.get("dashed") == "1" else "-"
         ax.add_patch(
             FancyBboxPatch(
@@ -216,7 +229,7 @@ def render(path, out_png):
                 box.h - 4,
                 boxstyle="round,pad=2,rounding_size=6",
                 facecolor=fill,
-                edgecolor=light(sd.get("strokeColor")) or fill,
+                edgecolor=stroke,
                 linewidth=1.2,
                 linestyle=box_ls,
                 zorder=3,

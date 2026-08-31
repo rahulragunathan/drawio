@@ -131,3 +131,19 @@ def test_edge_label_background_defaults_to_white_and_is_overridable():
     styles = {c.get("id"): c.get("style") for c in root}
     assert "labelBackgroundColor=#ffffff;" in styles[default_id]
     assert "labelBackgroundColor=#f3f0ff;" in styles[tinted_id]
+
+
+def test_half_an_anchor_pair_is_refused_at_build_time():
+    """exitX without exitY used to emit "exitY=None" into the style, which
+    crashed the validator. Failing here names the mistake instead."""
+    import pytest
+
+    helpers = load_template_helpers()
+    box, edge = helpers["box"], helpers["edge"]
+    a = box(0, 0, 50, 50, "A", fill="#000000")
+    b = box(200, 0, 50, 50, "B", fill="#000000")
+
+    with pytest.raises(ValueError, match="exitX"):
+        edge(a, b, exitX=1)
+    with pytest.raises(ValueError, match="entryX"):
+        edge(a, b, entryX=0)

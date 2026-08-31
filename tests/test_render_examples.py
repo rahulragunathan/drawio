@@ -49,4 +49,51 @@ def test_a_diagram_with_violations_is_not_rendered(monkeypatch, capsys, tmp_path
 
     assert code == 1
     assert rendered == [], "must not render a diagram that failed validation"
-    assert "violation" in capsys.readouterr().out
+    assert "error(s)" in capsys.readouterr().out
+
+
+def test_warnings_do_not_block_a_render(monkeypatch, capsys, tmp_path):
+    # validate.py exits 0 on warnings. Blocking here would mean this tool
+    # disagrees with the validator about whether a diagram is acceptable.
+    rendered = []
+    monkeypatch.setattr(render_examples, "find_drawio_cli", lambda: "drawio")
+    monkeypatch.setattr(
+        render_examples,
+        "validate",
+        lambda p: ["DIAGONAL: edge 'x' has a diagonal segment"],
+    )
+    monkeypatch.setattr(
+        render_examples, "render", lambda *a, **k: rendered.append(a) or True
+    )
+
+    def fake_build(script, workdir):
+        d = Path(workdir) / "sample.drawio"
+        d.write_text("<mxfile/>")
+        return [d]
+
+    monkeypatch.setattr(render_examples, "build", fake_build)
+
+    code = render_examples.main()
+
+    assert code == 0, "a warning is advisory; it must not block the render"
+    # Two themes per diagram, across however many examples the repo has.
+    assert rendered and len(rendered) % len(render_examples.THEMES) == 0
+    assert "DIAGONAL" in capsys.readouterr().out, "but the warning must be shown"
+
+
+def test_a_failed_render_is_not_reported_as_success(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(render_examples, "find_drawio_cli", lambda: "drawio")
+    monkeypatch.setattr(render_examples, "validate", lambda p: [])
+    monkeypatch.setattr(render_examples, "render", lambda *a, **k: False)
+
+    def fake_build(script, workdir):
+        d = Path(workdir) / "sample.drawio"
+        d.write_text("<mxfile/>")
+        return [d]
+
+    monkeypatch.setattr(render_examples, "build", fake_build)
+
+    code = render_examples.main()
+
+    assert code == 1
+    assert "rendered 2 themes" not in capsys.readouterr().out

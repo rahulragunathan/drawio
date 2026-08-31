@@ -192,6 +192,16 @@ def edge(
     end_arrow=True,
     label_bg="#ffffff",
 ):
+    if (exitX is None) != (exitY is None):
+        raise ValueError(
+            "exitX and exitY must be given together — half a pair emits "
+            "'exitY=None' into the style, which is not a coordinate"
+        )
+    if (entryX is None) != (entryY is None):
+        raise ValueError(
+            "entryX and entryY must be given together — half a pair emits "
+            "'entryY=None' into the style, which is not a coordinate"
+        )
     cid = cell_id()
     dash = ""
     if style == "dashed":

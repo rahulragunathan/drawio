@@ -146,3 +146,12 @@ def test_search_works_without_drawio_installed(tmp_path, capsys, monkeypatch):
 
     assert code == 0
     assert "aws-lambda" in capsys.readouterr().out
+
+
+def test_a_flag_missing_its_value_reports_usage(capsys):
+    # Indexing one past the flag with no bounds check gives an IndexError
+    # traceback, which tells the reader nothing about what they typed wrong.
+    code = list_icons.main(["--search"])
+
+    assert code == 2
+    assert "--search" in capsys.readouterr().out

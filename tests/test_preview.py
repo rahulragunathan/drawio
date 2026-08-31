@@ -97,3 +97,14 @@ def test_the_glyph_placeholder_names_the_icon_it_stands_for():
         preview.short_icon_name({"shape": "image", "image": "data:image/svg+xml,AAA"})
         == "svg"
     )
+
+
+def test_a_box_without_a_stroke_colour_borders_itself():
+    # light() never returns a falsy value, so "light(x) or fill" could never
+    # reach its fallback: a box with no strokeColor got the grey used for
+    # unparseable colours instead of a border matching its fill.
+    assert preview.box_colours({"fillColor": "#0078d4"}) == ("#0078d4", "#0078d4")
+    assert preview.box_colours({"fillColor": "#0078d4", "strokeColor": "#333333"}) == (
+        "#0078d4",
+        "#333333",
+    )

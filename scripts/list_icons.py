@@ -358,8 +358,17 @@ def main(argv: list[str] | None = None) -> int:
             return None
         return asar
 
+    def flag_value(flag: str) -> str | None:
+        """The value after a flag, or None when it was omitted."""
+        i = argv.index(flag)
+        return argv[i + 1] if i + 1 < len(argv) else None
+
     if "--search" in argv:
-        term = argv[argv.index("--search") + 1].lower()
+        term = flag_value("--search")
+        if term is None:
+            print("--search needs a term, e.g. --search lambda")
+            return 2
+        term = term.lower()
         hits = sorted(
             k for k in catalog if term in k or term in catalog[k]["name"].lower()
         )
@@ -433,7 +442,10 @@ def main(argv: list[str] | None = None) -> int:
         entries = read_asar(asar)
         names = sorted(all_names(entries))
         if "--family" in argv:
-            fam = argv[argv.index("--family") + 1]
+            fam = flag_value("--family")
+            if fam is None:
+                print(f"--family needs a name, one of {', '.join(sorted(FAMILIES))}")
+                return 2
             prefix = FAMILIES.get(fam, {}).get("prefix", fam)
             names = [n for n in names if n.startswith(prefix)]
         print("\n".join(names))
