@@ -37,10 +37,11 @@ re-builds and validates with zero violations. The
 `test_three_tier_example_validates_clean` test enforces the latter, but run the
 build directly too when you touch geometry.
 
-## End of a phase: regenerate the renders
+## End of a phase: regenerate the renders and repackage
 
 ```bash
-python scripts/render_examples.py
+python scripts/render_examples.py    # renders/ — reviewed for sign-off
+python scripts/package_skill.py      # ../drawio.skill — the uploadable archive
 ```
 
 Rebuilds every `examples/build_*.py`, validates each result, and writes
@@ -64,6 +65,13 @@ Three things worth knowing:
   found in this project — a blank icon plate, an arrow struck through a
   caption, unreadable dark labels — was found by looking at a render, not by
   a check. The renders exist for the problems no check can see yet.
+
+`package_skill.py` writes `../drawio.skill`, beside the skill folder rather
+than inside it, so the archive never contains a stale copy of itself. It
+excludes every hidden entry by rule rather than by name — `.git`, `.venv`,
+`.gitignore`, `.DS_Store` and the tool caches have all leaked into hand-built
+archives before — along with `renders/` and `__pycache__`. Do not build the
+zip by hand; the exclusion list is the part that goes wrong.
 
 ## Environment notes (esp. in a Cowork / VM sandbox)
 

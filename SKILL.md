@@ -23,6 +23,7 @@ This skill encodes those decisions explicitly. You write the coordinates; the va
 | `scripts/render_png.py` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
 | `scripts/preview.py` | Offline preview renderer. Reuses `validate.py`'s geometry, so it shows exactly what the validator sees. Approximate text wrapping — trust it for layout, not final fidelity. **Needs `matplotlib`**, which the rest of the skill does not — in a project venv without it, reach for `render_png.py` instead (the draw.io CLI is a system binary, not a venv dependency). |
 | `scripts/render_examples.py` | Rebuilds every example, validates it, and writes `renders/<name>-light.png` and `-dark.png`. Run at the end of a piece of work: a render is where you see the problems no check can catch. |
+| `scripts/package_skill.py` | Builds `../drawio.skill`, the uploadable archive. Run it at the end of a phase so the package matches the commit. |
 | `scripts/list_icons.py` | Browse the icon catalog (`--search redis`), or refresh it against a newer draw.io (`--verify`, `--refresh`). Only the refresh modes need draw.io installed. |
 | `references/icons.md` | The icon catalog: ~130 curated vendor icons as `family:name` keys, with brand colours. Read it to pick an icon. |
 | `assets/icon_names.txt.gz` | Every icon name draw.io ships (~11,500), used by `UNKNOWN_ICON` to tell a typo from a real name. Generated; do not hand-edit. |
@@ -274,7 +275,14 @@ If you find yourself copying the helpers across many diagrams in the same repo, 
 
 This skill follows the [Claude skill anatomy](https://docs.claude.com/en/docs/build-with-claude/skills) (SKILL.md + `scripts/` + `assets/` + `references/`).
 
-To package the skill as a `.skill` file (a zip with a `.skill` extension) for upload to Claude, either:
+To package the skill as a `.skill` file (a zip with a `.skill` extension) for upload to Claude:
+
+```bash
+python scripts/package_skill.py     # writes ../drawio.skill
+```
+
+It roots the archive at `drawio/` and drops every hidden entry (`.git`,
+`.venv`, `.gitignore`, tool caches) plus `renders/`. The manual alternatives:
 
 - Zip the folder from its parent directory (works anywhere):
 
