@@ -503,7 +503,7 @@ edge(
     entryY=0.75,
     color=COLOR_CONFIG_GOLD,
     style="dashed",
-    label="Load config",
+    label="Load Config",
     label_bg="#eaf3fb",
     waypoints=[(372, 370), (372, 200)],
 )
@@ -520,7 +520,7 @@ edge(
     entryX=0,
     entryY=0.5,
     color=COLOR_GATEWAY_ORANGE,
-    label="Verify<div>token</div>",
+    label="Verify<div>Token</div>",
     label_bg="#f3f0ff",
 )
 
@@ -535,7 +535,7 @@ edge(
     entryY=0,
     color=COLOR_GATEWAY_ORANGE,
     width=3,
-    label="Route<div>request</div>",
+    label="Route<div>Request</div>",
     label_bg="#f3f0ff",
     label_x=30,
     label_y=0,
@@ -575,7 +575,7 @@ edge(
     color=COLOR_FRONTEND_GREEN,
     width=3,
     bidirectional=True,
-    label="Read/write",
+    label="Read/Write",
     label_bg="#f3f0ff",
     waypoints=[(520, 284), (892, 284), (892, 202)],
     label_x=0,
@@ -592,7 +592,7 @@ edge(
     entryX=0,
     entryY=0.4,
     color=COLOR_FRONTEND_GREEN,
-    label="Enqueue job",
+    label="Enqueue Job",
     label_bg="#f3f0ff",
     waypoints=[(510, 425), (896, 425), (896, 401)],
 )
@@ -623,7 +623,7 @@ edge(
     entryX=0,
     entryY=0.72,
     color=COLOR_ORCH_PURPLE,
-    label="Write result",
+    label="Write Result",
     label_bg="#f3f0ff",
     waypoints=[(755, 272), (888, 272), (888, 215)],
     label_x=0,
