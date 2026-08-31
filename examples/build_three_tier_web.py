@@ -537,8 +537,11 @@ edge(
     width=3,
     label="Route<div>Request</div>",
     label_bg="#f3f0ff",
-    label_x=30,
-    label_y=0,
+    # Lifted toward API Gateway so it reads as leaving the gateway rather
+    # than floating mid-gap, and placed left of the x=510 line to stay clear
+    # of the Read/Write label.
+    label_x=-32,
+    label_y=-20,
 )
 
 # 6. Web -> Cache (source = green). Dotted = out-of-band lookup.
@@ -578,7 +581,10 @@ edge(
     label="Read/Write",
     label_bg="#f3f0ff",
     waypoints=[(520, 284), (892, 284), (892, 202)],
-    label_x=0,
+    # The longest segment's midpoint (x=706) lands over the Background
+    # Worker, so the label reads as the worker's. Pulled back to where the
+    # line leaves Web Service, which is what it describes.
+    label_x=-140,
     label_y=-20,
 )
 
