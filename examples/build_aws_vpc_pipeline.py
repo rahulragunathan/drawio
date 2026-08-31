@@ -1,29 +1,33 @@
-"""Minimal starter for a drawio diagram generator.
+"""AWS VPC data pipeline — worked example with vendor icons.
 
-Copy this file, rename it (e.g. `build_my_diagram.py`), and populate the
-section between the helper definitions and the XML write at the bottom.
+Files land in S3, Redshift loads them, an application on Fargate serves the
+results through API Gateway, and marts sync out to Snowflake. Everything
+inside the VPC reaches S3 through a gateway endpoint rather than the public
+internet, which is why the endpoint is drawn as its own component.
 
-Conventions encoded here (read SKILL.md for the full rationale):
-- Arrow colour matches the SOURCE box's fill (or its stroke if fill is too light).
-- Future state = grey/dashed shape + grey/dashed arrow with NO "Future" label
-  (legend covers it).
-- Edge labels carry `labelBackgroundColor=#ffffff` so they read over crossings.
-- Edges are emitted AFTER boxes so labels render on top.
-- Subheadings via sub() — italicised Title Case with explicit font-size.
-- Descriptions via desc() — sentence case with explicit font-size, non-bold.
-- Multi-line edge labels use <div> tags, NOT \\n (drawio Desktop round-trip).
+What this demonstrates
+- icon_box(): a vendor glyph inside a labelled card. The card keeps the exact
+  geometry, anchors and routing of a plain box(), so icons cost nothing in
+  layout terms. This is the default placement.
+- icon_node() is the alternative (bare glyph, name underneath) and is covered
+  in SKILL.md. It is not used here: a caption is wider than the glyph, so an
+  edge leaving the bottom of one crosses its own label, and the validator
+  cannot flag that because the shape is the edge's own endpoint.
+- svg_icon(): Snowflake has no draw.io stencil, so its logo is embedded as a
+  base64 data URI and travels with the file.
+- Nested containers: the VPC sits inside the AWS Cloud zone. API Gateway and
+  the S3 bucket are regional services, so they belong to the cloud zone but
+  NOT to the VPC — the geometry says so.
 
-After running this generator, run:
-    python scripts/validate.py <output.drawio>
-to check for CROSSING / OVERLAP / TEXT_OVERLAP / LABEL_OVERLAP /
-LABEL_BOX_OVERLAP / SHORT_LABELLED_EDGE / DIAGONAL / DANGLING violations.
-Then render the PNG and LOOK at it — a clean validate says nothing about
-whether labels have room or whether either theme is legible:
-    python scripts/render_png.py <output.drawio>   # foo.drawio -> foo.png
+Corridor allocation (see SKILL.md "Routing strategy")
+  y=192   main west-east lane: users -> gateway -> fargate -> endpoint -> s3
+  y=352   lower lane: redshift -> snowflake
+  y=520   return lane, below the VPC and inside the cloud zone: s3 -> redshift
+  x=730   vertical channel between fargate and redshift
+  x=1350  vertical channel down from s3 to the return lane
 
-Reserve routing corridors before writing any edges, and record the
-allocation here (e.g. "y=225 lane — pipeline fan-in; x=850 channel — app
--> data"). Later layout edits then become mechanical.
+Run:  python examples/build_aws_vpc_pipeline.py
+Then: python scripts/validate.py aws-vpc-pipeline.drawio
 """
 
 import xml.etree.ElementTree as ET
@@ -58,14 +62,16 @@ COLOR_CONSUMER_PURPLE = "#9c27b0"  # External consumer / subscriber
 # --------------------------------------------------------------------------
 # Canvas dimensions. Adjust to fit your content.
 # --------------------------------------------------------------------------
-W, H = 1560, 870
+W, H = 1520, 600
 
 
 # --------------------------------------------------------------------------
 # XML scaffolding.
 # --------------------------------------------------------------------------
 mxfile = ET.Element("mxfile", host="app.diagrams.net", type="device", version="24.0.0")
-diagram = ET.SubElement(mxfile, "diagram", name="My Diagram", id="my-diagram")
+diagram = ET.SubElement(
+    mxfile, "diagram", name="AWS VPC pipeline", id="aws-vpc-pipeline"
+)
 graph = ET.SubElement(
     diagram,
     "mxGraphModel",
@@ -212,10 +218,6 @@ def edge(
                         instead of being rerouted (cheap crossing fix).
     bidirectional=True— arrowheads on both ends (request/response, R/W).
     end_arrow=False   — no end arrowhead (connector / bus / merge line).
-    label_bg          — the plate drawn behind the label. It masks the line
-                        running underneath, so do not remove it; recolour it
-                        to match the zone the label sits over, or a white
-                        plate reads as a sticker on a tinted background.
     Prefer verb-first labels ('Call OCR', 'Reads index') and stacked <div>
     words in tight channels.
 
@@ -468,53 +470,168 @@ def desc(text, size=11):
 
 
 # --------------------------------------------------------------------------
-# === YOUR DIAGRAM GOES HERE ===
-#
-# Pattern:
-#   1. Title bar (a `box` near y=20).
-#   2. Containers (dashed zones) — emit FIRST so boxes layer on top.
-#   3. Boxes inside each zone.
-#   4. Edges (with source-coloured arrows, waypoints, label offsets).
-#   5. Legend strip (a `box` near the bottom).
-#
-# Look at examples/build_three_tier_web.py for a fully-worked reference
-# that exercises every locked convention and validates clean.
+
 # --------------------------------------------------------------------------
+# AWS category colours. These are AWS's own, so the cards read as AWS.
+# --------------------------------------------------------------------------
+AWS_NAVY = "#232F3E"  # users / neutral
+GATEWAY = "#E7157B"  # application integration
+COMPUTE = "#ED7100"  # compute
+NETWORK = "#8C4FFF"  # networking
+STORAGE = "#7AA116"  # storage
+ANALYTICS = "#8C4FFF"  # analytics
+SNOW = "#29B5E8"  # Snowflake brand
 
-box(
-    40,
-    20,
-    W - 80,
-    50,
-    "Replace this with your diagram title",
-    fill="#1f3864",
-    fontSize=18,
-)
+# Snowflake ships no draw.io stencil, so its mark is embedded from a local
+# SVG. This is the normal way to carry a logo draw.io does not have: point
+# svg_icon() at the file and the artwork travels inside the .drawio.
+SNOWFLAKE_LOGO = Path(__file__).with_name("snowflake.svg")
 
-# Example container
+# ----- Zones (emitted first so the shapes inside them layer on top) -----
+container(290, 40, 1180, 520, "AWS Cloud", stroke=AWS_NAVY, fontColor=AWS_NAVY)
 container(
+    580, 100, 620, 380, "VPC — private subnets", stroke=NETWORK, fontColor=NETWORK
+)
+
+# ----- Components -----
+users = icon_box(
     40,
-    100,
-    320,
-    720,
-    "Source Systems",
-    stroke="#3a6ea5",
-    fill="#eaf3fb",
-    fontColor="#1f3864",
-)
-
-# Example box inside the container
-src = box(
-    70,
     160,
-    260,
-    70,
-    "<b>Example Source</b><br>" + sub("Subheading"),
-    fill=COLOR_PRIMARY_BLUE,
-    bold=False,
+    200,
+    64,
+    "<b>Users</b>",
+    fill=AWS_NAVY,
+    icon="aws:users",
+    icon_fill=AWS_NAVY,
+)
+apigw = icon_box(
+    330,
+    160,
+    200,
+    64,
+    "<b>API Gateway</b>",
+    fill=GATEWAY,
+    icon="aws:api_gateway",
+    icon_fill=GATEWAY,
+)
+fargate = icon_box(
+    620,
+    160,
+    220,
+    64,
+    "<b>Fargate</b>",
+    fill=COMPUTE,
+    icon="aws:fargate",
+    icon_fill=COMPUTE,
+)
+vpce = icon_box(
+    960,
+    160,
+    200,
+    64,
+    "<b>S3 Endpoint</b>",
+    fill=NETWORK,
+    icon="aws:endpoint",
+    icon_fill=NETWORK,
+)
+s3 = icon_box(
+    1250,
+    160,
+    200,
+    64,
+    "<b>S3 Staging</b>",
+    fill=STORAGE,
+    icon="aws:bucket",
+    icon_fill=STORAGE,
+)
+redshift = icon_box(
+    620,
+    320,
+    220,
+    64,
+    "<b>Redshift</b>",
+    fill=ANALYTICS,
+    icon="aws:redshift",
+    icon_fill=ANALYTICS,
+)
+snowflake = icon_box(
+    40, 320, 200, 64, "<b>Snowflake</b>", fill=SNOW, icon=svg_icon(SNOWFLAKE_LOGO)
 )
 
-# Add more boxes, then edges, then a legend...
+# ----- Edges (after the boxes, so labels render on top) -----
+# Each arrow takes its source box's colour. All five in the main lane share
+# y=192, which is clear because their x-ranges do not overlap.
+edge(
+    users,
+    apigw,
+    color=AWS_NAVY,
+    label="HTTPS",
+    exitX=1,
+    exitY=0.5,
+    entryX=0,
+    entryY=0.5,
+)
+edge(
+    apigw,
+    fargate,
+    color=GATEWAY,
+    label="Invoke",
+    exitX=1,
+    exitY=0.5,
+    entryX=0,
+    entryY=0.5,
+)
+edge(
+    fargate,
+    vpce,
+    color=COMPUTE,
+    label="Stage files",
+    exitX=1,
+    exitY=0.5,
+    entryX=0,
+    entryY=0.5,
+)
+edge(vpce, s3, color=NETWORK, label="PUT", exitX=1, exitY=0.5, entryX=0, entryY=0.5)
+
+# Down the x=1350 channel, along the y=520 return lane, up into Redshift.
+# The lane sits below the VPC and inside the cloud zone, so it crosses the
+# VPC border but never its title band.
+edge(
+    s3,
+    redshift,
+    color=STORAGE,
+    label="COPY load",
+    exitX=0.5,
+    exitY=1,
+    entryX=0.5,
+    entryY=1,
+    waypoints=[(1350, 520), (730, 520)],
+)
+
+# Read/write, so both ends carry an arrowhead. Stacked into two <div> lines
+# to fit the 96px channel — a single line would trip SHORT_LABELLED_EDGE.
+edge(
+    fargate,
+    redshift,
+    color=COMPUTE,
+    bidirectional=True,
+    label="Query<div>results</div>",
+    exitX=0.5,
+    exitY=1,
+    entryX=0.5,
+    entryY=0,
+)
+
+edge(
+    redshift,
+    snowflake,
+    color=ANALYTICS,
+    label="Sync marts",
+    exitX=0,
+    exitY=0.5,
+    entryX=1,
+    entryY=0.5,
+)
 
 
 # --------------------------------------------------------------------------
@@ -522,7 +639,7 @@ src = box(
 # --------------------------------------------------------------------------
 xml_bytes = ET.tostring(mxfile, encoding="utf-8")
 pretty = minidom.parseString(xml_bytes).toprettyxml(indent="  ")
-out_path = "./my-diagram.drawio"
+out_path = "./aws-vpc-pipeline.drawio"
 with open(out_path, "w") as f:
     f.write(pretty)
 print(f"Wrote {out_path}")

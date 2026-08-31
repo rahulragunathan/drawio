@@ -16,3 +16,8 @@ __pycache__/
 *.drawio
 *.png
 !examples/*.drawio
+
+# renders/ is the exception: regenerated at the end of each phase and
+# reviewed for sign-off, so the repo records what each phase actually looked
+# like. Regenerate with scripts/render_examples.py — never hand-edit.
+!renders/*.png

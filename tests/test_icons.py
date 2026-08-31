@@ -112,3 +112,22 @@ def test_svg_icon_embeds_base64_with_no_semicolon_in_the_payload(tmp_path):
     assert ";base64," not in style
     payload = style.split("image=data:image/svg+xml,")[1].split(";")[0]
     assert payload and ";" not in payload
+
+
+def test_edge_label_background_defaults_to_white_and_is_overridable():
+    """The plate masks the line running under a label, so it cannot simply be
+    dropped. It CAN be recoloured: over a tinted zone a white plate reads as a
+    sticker, while a plate matching the zone still masks and disappears."""
+    helpers = load_template_helpers()
+    root = helpers["root"]
+    edge = helpers["edge"]
+    box = helpers["box"]
+
+    a = box(0, 0, 50, 50, "A", fill="#000000")
+    b = box(200, 0, 50, 50, "B", fill="#000000")
+    default_id = edge(a, b, label="x")
+    tinted_id = edge(a, b, label="y", label_bg="#f3f0ff")
+
+    styles = {c.get("id"): c.get("style") for c in root}
+    assert "labelBackgroundColor=#ffffff;" in styles[default_id]
+    assert "labelBackgroundColor=#f3f0ff;" in styles[tinted_id]

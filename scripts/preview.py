@@ -37,6 +37,7 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent))
 from validate import (  # noqa: E402
+    CAPTION_BAND_PAD,
     edge_label_center,
     edge_polyline,
     parse_drawio,
@@ -65,6 +66,40 @@ def light(value: str) -> str:
     except (ValueError, TypeError):
         return FALLBACK_COLOUR
     return value
+
+
+def text_anchor(box):
+    """Where a box's label is drawn: (x, y, vertical_alignment).
+
+    Most labels sit in the middle of their shape. A vendor icon's caption
+    renders BELOW it — matching caption_rect(), so the preview shows the same
+    band the validator reasons about.
+    """
+    cx = box.x + box.w / 2
+    if getattr(box, "label_below", False):
+        return cx, box.y2 + CAPTION_BAND_PAD, "top"
+    return cx, box.y + box.h / 2, "center"
+
+
+def short_icon_name(style: dict) -> str:
+    """The last meaningful segment of whatever icon a style refers to.
+
+    The preview cannot draw a real stencil, so a placeholder carries this
+    instead. A blank plate would hide the most common icon mistake there is —
+    a name that does not resolve.
+    """
+    for key in ("resIcon", "prIcon"):
+        if style.get(key):
+            return style[key].rsplit(".", 1)[-1]
+    image = style.get("image", "")
+    if image.startswith("data:"):
+        return "svg"
+    if image:
+        return image.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    shape = style.get("shape", "")
+    if shape.startswith("mxgraph."):
+        return shape.rsplit(".", 1)[-1]
+    return "?"
 
 
 def strip_html(s: str) -> str:
@@ -141,6 +176,37 @@ def render(path, out_png):
         if box.is_container:
             continue
         sd, val = styles.get(cid, ({}, ""))
+
+        # A glyph nested in a card. The real stencil cannot be drawn here, so
+        # it becomes a placeholder of the same size in the same place: the
+        # preview stays honest about the space the icon occupies, which is the
+        # one thing it is trusted for.
+        if box.is_decoration:
+            ax.add_patch(
+                Rectangle(
+                    (box.x, box.y),
+                    box.w,
+                    box.h,
+                    facecolor=light(sd.get("fillColor", "#e8e8e8")),
+                    edgecolor="#8a8a8a",
+                    linewidth=0.6,
+                    linestyle=(0, (2, 2)),
+                    zorder=4,
+                )
+            )
+            ax.text(
+                box.x + box.w / 2,
+                box.y + box.h / 2,
+                short_icon_name(sd),
+                fontsize=4,
+                color="#ffffff",
+                ha="center",
+                va="center",
+                zorder=5,
+                clip_on=True,
+            )
+            continue
+
         fill = light(sd.get("fillColor", "#cccccc"))
         box_ls = (0, (5, 3)) if sd.get("dashed") == "1" else "-"
         ax.add_patch(
@@ -156,17 +222,34 @@ def render(path, out_png):
                 zorder=3,
             )
         )
+        # A bare glyph carries its name below the shape, not inside it.
+        if box.label_below:
+            ax.text(
+                box.x + box.w / 2,
+                box.y + box.h / 2,
+                short_icon_name(sd),
+                fontsize=4,
+                color="#ffffff",
+                ha="center",
+                va="center",
+                zorder=4,
+                clip_on=True,
+            )
+
         lines = strip_html(val).split("\n")
         if len(lines) > 6:
             lines = lines[:6] + ["…"]
+        tx, ty, va = text_anchor(box)
         ax.text(
-            box.x + box.w / 2,
-            box.y + box.h / 2,
+            tx,
+            ty,
             "\n".join(lines),
             fontsize=7.5,
-            color=light(sd.get("fontColor", "#ffffff")),
+            color=light(
+                sd.get("fontColor", "#333333" if box.label_below else "#ffffff")
+            ),
             ha="center",
-            va="center",
+            va=va,
             zorder=4,
         )
 

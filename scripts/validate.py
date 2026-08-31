@@ -6,6 +6,10 @@ Nine checks:
                          caption band beneath a bottom-labelled icon. A
                          glyph nested inside a box is skipped: the box is
                          already checked at those coordinates.
+                         The source/target exemption covers the SHAPE only —
+                         an edge crossing its OWN caption still fires, since
+                         a caption is text, not a connection surface. Two
+                         stacked icons wired together trip this at both ends.
   2. OVERLAP           — two edge segments share 8+ px on the same axis-
                          aligned line (within a 1.5 px orthogonal tolerance).
   3. TEXT_OVERLAP      — edge segment passes through the top 28 px title
@@ -112,6 +116,23 @@ TITLE_EDGE_BUFFER = 1.0
 # may need manual label_x / label_y tuning (see SKILL.md Limitations).
 LABEL_PER_CHAR_PX = 5.5
 LABEL_LINE_HEIGHT = 16.0
+
+# The two constants above describe fontSize 10, the size edge labels used to
+# be fixed at. They are now derived, so a diagram that changes label size
+# stays correctly measured instead of silently under-measuring.
+BASE_FONT_SIZE = 10.0
+
+
+def char_px(font_size: float = BASE_FONT_SIZE) -> float:
+    """Estimated width of one Latin character at a given font size."""
+    return LABEL_PER_CHAR_PX * font_size / BASE_FONT_SIZE
+
+
+def line_px(font_size: float = BASE_FONT_SIZE) -> float:
+    """Estimated line height at a given font size."""
+    return LABEL_LINE_HEIGHT * font_size / BASE_FONT_SIZE
+
+
 LABEL_X_PAD = 10.0
 LABEL_Y_PAD = 4.0
 # px on the shorter axis; an edge-label/box overlap smaller than this is
@@ -212,8 +233,9 @@ def caption_rect(box: Box) -> tuple[float, float, float, float]:
     enough to keep arrows off the text.
     """
     lines = normalise_label(box.label) or [""]
-    w = max(len(ln) for ln in lines) * LABEL_PER_CHAR_PX + 2 * LABEL_X_PAD
-    h = len(lines) * LABEL_LINE_HEIGHT + 2 * LABEL_Y_PAD
+    font = float(box.style.get("fontSize", BASE_FONT_SIZE))
+    w = max(len(ln) for ln in lines) * char_px(font) + 2 * LABEL_X_PAD
+    h = len(lines) * line_px(font) + 2 * LABEL_Y_PAD
     cx = box.x + box.w / 2
     top = box.y2 + CAPTION_BAND_PAD
     return (cx - w / 2, top, cx + w / 2, top + h)
@@ -237,6 +259,7 @@ class Edge:
     # instead of a cell — a normal hand-tuning artifact, not a broken edge.
     src_point: tuple[float, float] | None = None
     dst_point: tuple[float, float] | None = None
+    font_size: float = BASE_FONT_SIZE
 
 
 def load_icon_names() -> set[str]:
@@ -903,6 +926,23 @@ def validate(path: str) -> list[str]:
                 if box.is_decoration:
                     continue
                 if bid == edge.src or bid == edge.dst:
+                    # The endpoint exemption covers the SHAPE only. An edge
+                    # legitimately terminates on its own box's boundary, but a
+                    # caption underneath is text: a line through it reads as a
+                    # strikethrough. Stack two captioned glyphs and wire them
+                    # together and this fires at both ends, which is exactly
+                    # what the exemption used to hide.
+                    if box.label_below and box.label.strip():
+                        if segment_crosses_rect(a, b, caption_rect(box)):
+                            violations.append(
+                                f"CROSSING: edge '{edge.label}' "
+                                f"({endpoint_label(boxes, edge.src)} → "
+                                f"{endpoint_label(boxes, edge.dst)}) "
+                                f"segment {a}→{b} passes through the caption "
+                                f"of its own "
+                                f"{'source' if bid == edge.src else 'target'} "
+                                f"'{short_label(box.label)}'"
+                            )
                     continue
                 if segment_crosses_box(a, b, box):
                     src_label = endpoint_label(boxes, edge.src)
@@ -985,8 +1025,8 @@ def validate(path: str) -> list[str]:
                 continue
             c1 = edge_label_center(e1, poly1)
             c2 = edge_label_center(e2, poly2)
-            b1 = label_bbox(c1, e1.label)
-            b2 = label_bbox(c2, e2.label)
+            b1 = label_bbox(c1, e1.label, char_px(e1.font_size), line_px(e1.font_size))
+            b2 = label_bbox(c2, e2.label, char_px(e2.font_size), line_px(e2.font_size))
             if rects_overlap(b1, b2):
                 ov_x = min(b1[2], b2[2]) - max(b1[0], b2[0])
                 ov_y = min(b1[3], b2[3]) - max(b1[1], b2[1])
@@ -1010,7 +1050,7 @@ def validate(path: str) -> list[str]:
         if not edge.label.strip():
             continue
         c = edge_label_center(edge, poly)
-        lb = label_bbox(c, edge.label)
+        lb = label_bbox(c, edge.label, char_px(edge.font_size), line_px(edge.font_size))
         for bid, box in boxes.items():
             if box.is_container:
                 continue
@@ -1038,7 +1078,7 @@ def validate(path: str) -> list[str]:
     for _eid, (edge, poly) in edge_lines.items():
         if not edge.label.strip():
             continue
-        text_w = label_text_width(edge.label)
+        text_w = label_text_width(edge.label, char_px(edge.font_size))
         route_len = polyline_length(poly)
         if route_len < text_w:
             src_label = endpoint_label(boxes, edge.src)

@@ -27,15 +27,19 @@ from render_png import parse_args  # noqa: E402
 
 def test_no_args_returns_empty_paths():
     """Zero args is the glob-the-cwd mode; main() fills the paths in."""
-    assert parse_args([]) == ([], None)
+    assert parse_args([]) == ([], None, None)
 
 
 def test_single_input_without_output():
-    assert parse_args(["a.drawio"]) == (["a.drawio"], None)
+    assert parse_args(["a.drawio"]) == (["a.drawio"], None, None)
 
 
 def test_multiple_inputs_without_output():
-    assert parse_args(["a.drawio", "b.drawio"]) == (["a.drawio", "b.drawio"], None)
+    assert parse_args(["a.drawio", "b.drawio"]) == (
+        ["a.drawio", "b.drawio"],
+        None,
+        None,
+    )
 
 
 @pytest.mark.parametrize(
@@ -48,7 +52,7 @@ def test_multiple_inputs_without_output():
     ],
 )
 def test_output_flag_forms(argv):
-    paths, out = parse_args(argv)
+    paths, out, _theme = parse_args(argv)
     assert paths == ["a.drawio"]
     assert out == Path("out.png")
 
@@ -117,3 +121,48 @@ def test_render_creates_missing_output_directory(tmp_path, monkeypatch):
     src.write_text("<mxfile/>")
     render_png.render(src, "drawio", tmp_path / "docs" / "out.png")
     assert (tmp_path / "docs").is_dir()
+
+
+def test_theme_is_parsed_and_defaults_to_none():
+    assert parse_args(["a.drawio", "--theme", "dark"]) == (["a.drawio"], None, "dark")
+    assert parse_args(["a.drawio", "--theme=light"]) == (["a.drawio"], None, "light")
+
+
+def test_an_unknown_theme_is_rejected():
+    # draw.io accepts dark, light and auto. Anything else silently exports
+    # the default theme, which is worse than refusing.
+    with pytest.raises(ValueError, match="theme"):
+        parse_args(["a.drawio", "--theme", "neon"])
+
+
+def test_theme_reaches_the_drawio_cli(tmp_path, monkeypatch):
+    recorded = {}
+
+    def fake_run(cmd, **kwargs):
+        recorded["cmd"] = cmd
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(render_png.subprocess, "run", fake_run)
+    src = tmp_path / "d.drawio"
+    src.write_text("<mxfile/>")
+
+    render_png.render(src, "drawio", theme="dark")
+
+    assert "--theme" in recorded["cmd"]
+    assert recorded["cmd"][recorded["cmd"].index("--theme") + 1] == "dark"
+
+
+def test_no_theme_flag_is_sent_when_none_is_requested(tmp_path, monkeypatch):
+    recorded = {}
+
+    def fake_run(cmd, **kwargs):
+        recorded["cmd"] = cmd
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(render_png.subprocess, "run", fake_run)
+    src = tmp_path / "d.drawio"
+    src.write_text("<mxfile/>")
+
+    render_png.render(src, "drawio")
+
+    assert "--theme" not in recorded["cmd"]

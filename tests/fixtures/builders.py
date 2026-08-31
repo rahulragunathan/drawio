@@ -631,3 +631,19 @@ def build_known_icon(path):
         "verticalAlign=top;align=center;shape=mxgraph.aws4.resourceIcon;"
         "resIcon=mxgraph.aws4.lambda;",
     )
+
+
+def build_edge_through_own_caption(path):
+    """An edge leaving the bottom of a glyph runs through its own caption.
+
+    The shape is the edge's own endpoint, so the endpoint exemption hides it —
+    but a caption is text, not a connection surface. This is the most common
+    way an icon diagram ends up with a line struck through a label, and it
+    happens at BOTH ends when two glyphs are stacked and wired together.
+    """
+    mxfile, root, counter = _new_doc()
+    node = _icon_node(root, counter, 400, 300, 48, "Fargate")
+    below = _box(root, counter, 380, 500, 200, 60, "Redshift")
+    _edge(root, counter, node, below, exitX=0.5, exitY=1, entryX=0.5, entryY=0)
+    _write(mxfile, path)
+    return path

@@ -333,3 +333,52 @@ def test_every_catalog_icon_passes_the_validator(tmp_path):
                 unknown.append((key, ref))
 
     assert unknown == []
+
+
+def test_aws_vpc_pipeline_example_validates_clean(tmp_path):
+    # The example is the skill's worked specification for icons. If it stops
+    # validating, the conventions it teaches have drifted from the checks.
+    script = SKILL_ROOT / "examples" / "build_aws_vpc_pipeline.py"
+    subprocess.run(
+        [sys.executable, str(script)],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert validate(str(tmp_path / "aws-vpc-pipeline.drawio")) == []
+
+
+def test_an_edge_through_its_own_caption_is_flagged(tmp_path):
+    from builders import build_edge_through_own_caption
+
+    v = validate(str(build_edge_through_own_caption(tmp_path / "d.drawio")))
+
+    assert _types(v) == {"CROSSING"}
+    assert "caption" in v[0].lower(), v
+
+
+def test_label_width_scales_with_font_size():
+    # The estimator was calibrated at fontSize 10. Hard-coding that means any
+    # change to label size silently under-measures, and the two label checks
+    # stop firing when they should.
+    from validate import char_px, label_text_width
+
+    assert char_px(10) == pytest.approx(5.5)
+    assert char_px(12) > char_px(10)
+
+    narrow = label_text_width("Stage files", char_px(10))
+    wide = label_text_width("Stage files", char_px(12))
+    assert wide > narrow
+
+
+def test_an_edges_font_size_is_read_from_its_style(tmp_path):
+    from builders import build_clean
+    from validate import parse_drawio
+
+    path = tmp_path / "d.drawio"
+    build_clean(path)
+    _boxes, edges = parse_drawio(str(path))
+
+    assert edges[0].font_size == 10.0

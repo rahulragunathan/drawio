@@ -25,7 +25,7 @@ Pure development needs only the folder.
 From the skill root:
 
 ```bash
-python -m pytest                                   # all checks (34 tests)
+.venv/bin/python -m pytest                         # all checks
 python examples/build_three_tier_web.py            # build the example
 python scripts/validate.py three-tier-web.drawio   # must be 0 violations
 python scripts/preview.py three-tier-web.drawio    # inline visual (matplotlib)
@@ -36,6 +36,34 @@ helpers, or the example "done" until `pytest` is green *and* the example
 re-builds and validates with zero violations. The
 `test_three_tier_example_validates_clean` test enforces the latter, but run the
 build directly too when you touch geometry.
+
+## End of a phase: regenerate the renders
+
+```bash
+python scripts/render_examples.py
+```
+
+Rebuilds every `examples/build_*.py`, validates each result, and writes
+`renders/<diagram>-light.png` and `renders/<diagram>-dark.png`. **These PNGs
+are what gets reviewed for sign-off**, so regenerate them as the last step of
+a phase — a stale render is worse than none, because it is reviewed as if it
+were current.
+
+The renders are committed. For a diagramming skill they are the product, so
+the repo records what each phase actually looked like; a diff that changes
+geometry should show a changed picture.
+
+Three things worth knowing:
+
+- **Both themes, every time.** The skill stopped authoring dark colours in
+  1.3.0, but draw.io still inverts them on export and its choices still have
+  to be looked at. Light-only review misses that entirely.
+- **A diagram with violations is reported and not rendered.** Reviewing a
+  picture of a layout the validator already rejected wastes the review.
+- **A clean validate is not the bar.** Every genuinely interesting defect
+  found in this project — a blank icon plate, an arrow struck through a
+  caption, unreadable dark labels — was found by looking at a render, not by
+  a check. The renders exist for the problems no check can see yet.
 
 ## Environment notes (esp. in a Cowork / VM sandbox)
 

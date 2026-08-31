@@ -190,6 +190,7 @@ def edge(
     jump=False,
     bidirectional=False,
     end_arrow=True,
+    label_bg="#ffffff",
 ):
     cid = cell_id()
     dash = ""
@@ -213,8 +214,8 @@ def edge(
         f"jettySize=auto;html=1;{exit_str}{entry_str}"
         f"strokeColor={strokeC};strokeWidth={width};"
         f"{dash}{'jumpStyle=gap;' if jump else ''}{start_str}{end_str}"
-        f"startSize=2;endSize=2;fontSize=10;"
-        f"fontColor={strokeC};labelBackgroundColor=#ffffff;"
+        f"startSize=2;endSize=2;fontSize=12;"
+        f"fontColor={strokeC};labelBackgroundColor={label_bg};"
     )
     value = label or ""
     c = ET.SubElement(
@@ -476,6 +477,7 @@ edge(
     entryY=0.5,
     color=COLOR_PRIMARY_BLUE,
     label="HTTPS",
+    label_bg="#eaf3fb",
 )
 
 # 2. CDN (future) -> Browser — grey/dashed, no label.
@@ -501,7 +503,8 @@ edge(
     entryY=0.75,
     color=COLOR_CONFIG_GOLD,
     style="dashed",
-    label="Load Config",
+    label="Load config",
+    label_bg="#eaf3fb",
     waypoints=[(372, 370), (372, 200)],
 )
 
@@ -517,7 +520,8 @@ edge(
     entryX=0,
     entryY=0.5,
     color=COLOR_GATEWAY_ORANGE,
-    label="Verify<div>Token</div>",
+    label="Verify<div>token</div>",
+    label_bg="#f3f0ff",
 )
 
 # 5. API Gateway -> Web Service (source = orange, dominant flow, width=3).
@@ -531,7 +535,8 @@ edge(
     entryY=0,
     color=COLOR_GATEWAY_ORANGE,
     width=3,
-    label="Route<div>Request</div>",
+    label="Route<div>request</div>",
+    label_bg="#f3f0ff",
     label_x=30,
     label_y=0,
 )
@@ -551,6 +556,7 @@ edge(
     style="dotted",
     jump=True,
     label="Read",
+    label_bg="#f3f0ff",
     waypoints=[(500, 296), (896, 296), (896, 308)],
 )
 
@@ -569,7 +575,8 @@ edge(
     color=COLOR_FRONTEND_GREEN,
     width=3,
     bidirectional=True,
-    label="Read/Write",
+    label="Read/write",
+    label_bg="#f3f0ff",
     waypoints=[(520, 284), (892, 284), (892, 202)],
     label_x=0,
     label_y=-20,
@@ -585,7 +592,8 @@ edge(
     entryX=0,
     entryY=0.4,
     color=COLOR_FRONTEND_GREEN,
-    label="Enqueue Job",
+    label="Enqueue job",
+    label_bg="#f3f0ff",
     waypoints=[(510, 425), (896, 425), (896, 401)],
 )
 
@@ -601,6 +609,7 @@ edge(
     color=COLOR_ORCH_PURPLE,
     style="dotted",
     label="Consume",
+    label_bg="#f3f0ff",
     waypoints=[(890, 380), (890, 419)],
 )
 
@@ -614,7 +623,8 @@ edge(
     entryX=0,
     entryY=0.72,
     color=COLOR_ORCH_PURPLE,
-    label="Write Result",
+    label="Write result",
+    label_bg="#f3f0ff",
     waypoints=[(755, 272), (888, 272), (888, 215)],
     label_x=0,
     label_y=-14,
@@ -634,6 +644,7 @@ edge(
     color=COLOR_DATASTORE_NAVY,
     style="dashed",
     label="Replicate",
+    label_bg="#e7f0fb",
     waypoints=[(1250, 234), (1250, 514)],
 )
 

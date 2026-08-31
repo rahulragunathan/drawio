@@ -45,11 +45,17 @@ def find_drawio_cli() -> str | None:
 USAGE = """Usage:
     python render_png.py <file.drawio> [more.drawio ...]
     python render_png.py                          # every .drawio in cwd
-    python render_png.py <file.drawio> -o <path.png>"""
+    python render_png.py <file.drawio> -o <path.png>
+    python render_png.py <file.drawio> --theme dark   # dark, light, auto"""
 
 
-def parse_args(argv: list[str]) -> tuple[list[str], Path | None]:
-    """Split argv into input paths and an optional explicit output path.
+# draw.io's own set. "auto" leaves an SVG adaptive and renders raster
+# formats light.
+THEMES = ("dark", "light", "auto")
+
+
+def parse_args(argv: list[str]) -> tuple[list[str], Path | None, str | None]:
+    """Split argv into input paths, an optional output path, and a theme.
 
     Raises ValueError with an actionable message on a malformed or
     ambiguous invocation. Kept separate from main() so the argument
@@ -57,6 +63,15 @@ def parse_args(argv: list[str]) -> tuple[list[str], Path | None]:
     """
     paths: list[str] = []
     out_path: Path | None = None
+    theme: str | None = None
+
+    def set_theme(value: str):
+        nonlocal theme
+        if value not in THEMES:
+            raise ValueError(
+                f"unknown theme {value!r}; expected one of {', '.join(THEMES)}"
+            )
+        theme = value
 
     def set_output(value: str):
         nonlocal out_path
@@ -77,6 +92,14 @@ def parse_args(argv: list[str]) -> tuple[list[str], Path | None]:
         elif arg.startswith("--output="):
             set_output(arg.split("=", 1)[1])
             i += 1
+        elif arg == "--theme":
+            if i + 1 >= len(argv):
+                raise ValueError(f"--theme needs one of {', '.join(THEMES)}")
+            set_theme(argv[i + 1])
+            i += 2
+        elif arg.startswith("--theme="):
+            set_theme(arg.split("=", 1)[1])
+            i += 1
         elif arg.startswith("-"):
             raise ValueError(f"unknown option {arg!r}")
         else:
@@ -91,10 +114,15 @@ def parse_args(argv: list[str]) -> tuple[list[str], Path | None]:
             f"--output names one destination file, so it needs exactly one "
             f"input .drawio (got {len(paths)})"
         )
-    return paths, out_path
+    return paths, out_path, theme
 
 
-def render(drawio_path: Path, cli: str, out_path: Path | None = None) -> bool:
+def render(
+    drawio_path: Path,
+    cli: str,
+    out_path: Path | None = None,
+    theme: str | None = None,
+) -> bool:
     # Default: replace the .drawio extension rather than appending to it —
     # drawio Desktop would write foo.drawio.png, which needed a follow-up
     # `mv` on every invocation and leaked double extensions into commits.
@@ -107,8 +135,10 @@ def render(drawio_path: Path, cli: str, out_path: Path | None = None) -> bool:
         "png",
         "--output",
         str(out_path),
-        str(drawio_path),
     ]
+    if theme:
+        cmd += ["--theme", theme]
+    cmd.append(str(drawio_path))
     print(f"  → {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -120,7 +150,7 @@ def render(drawio_path: Path, cli: str, out_path: Path | None = None) -> bool:
 
 def main():
     try:
-        args, out_path = parse_args(sys.argv[1:])
+        args, out_path, theme = parse_args(sys.argv[1:])
     except ValueError as exc:
         print(f"ERROR: {exc}\n")
         print(USAGE)
@@ -145,7 +175,7 @@ def main():
             continue
         print(f"Rendering {p}")
         # out_path is only ever set for a single input (parse_args enforces).
-        if render(p, cli, out_path):
+        if render(p, cli, out_path, theme):
             ok += 1
     print(f"\n{ok}/{len(args)} rendered.")
     sys.exit(0 if ok == len(args) else 1)
