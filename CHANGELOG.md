@@ -9,6 +9,94 @@ The authoritative version is the `version:` field in `SKILL.md` frontmatter
 (the Customize → Skills UI reads it from there). Keep this changelog's top
 entry in sync with it before packaging. See `CONTRIBUTING.md` → Packaging.
 
+## 1.3.0 — 2026-08-31
+
+Vendor logos, a ninth check, and the removal of dark-mode support.
+
+### Icons
+
+- **`icon_box(...)`** — a vendor glyph inside a labelled card. The card keeps
+  the exact geometry, anchors and routing of a plain `box()`, so icons cost
+  nothing in layout terms. The default placement.
+- **`icon_node(...)`** — bare glyph with its name underneath, the vendor-docs
+  look. Its caption is wider than the glyph, so an edge leaving the bottom
+  crosses its own label; `icon_box()` avoids that entirely.
+- **`svg_icon(path)`** — embeds a local SVG as a base64 data URI for a logo
+  draw.io does not ship. The form is `data:image/svg+xml,<base64>`; the
+  `;base64,` spelling renders blank, because `;` ends the style token.
+- **`raw_icon(...)`** — escape hatch for a name not in the catalog.
+- **`references/icons.md`** — ~130 curated icons across AWS, Azure, GCP,
+  Kubernetes, Cisco and generic network shapes, with brand colours. It is also
+  the machine-readable source, so there is no second copy to drift.
+- **`scripts/list_icons.py`** — browse, verify, or refresh the catalog. Only
+  the refresh modes need draw.io installed.
+
+### Validator
+
+- **New check: `UNKNOWN_ICON`** (warning). Verifies stencil, `resIcon`/`prIcon`
+  and image names against the ~11,500 names draw.io ships, with a did-you-mean.
+  A mistyped stencil renders as an empty shape and reports nothing, so no other
+  check can catch it. Skipped when the name list is absent.
+- **Child cells are positioned against their parent.** A glyph at (10, 16)
+  inside a box at (400, 300) was becoming a phantom obstacle near the canvas
+  origin. This also fixes a pre-existing bug: draw.io Desktop writes
+  `edgeLabel` child cells on round-trip, which were parsed as absolute boxes.
+- **CROSSING now covers an icon's caption band**, including against the edge's
+  own endpoints. A caption is text, not a connection surface.
+- **A glyph inside a card is no longer a second obstacle**, so one routing
+  problem reports once.
+- **Label measurement scales with `fontSize`** instead of assuming 10.
+- **Edge labels moved from fontSize 10 to 12.**
+- **A malformed anchor no longer kills the parser**; the generators refuse half
+  an anchor pair by name.
+
+### Removed: dark-mode support
+
+`ld()`, the eight `*_DARK` constants, all 35 `*_dark` parameters, and the
+`<font color="light-dark(...)">` wrapper on edge labels are gone.
+
+Measured against a real dark export, the manual handling made things **worse**:
+draw.io inverts colours for its own dark theme, and an explicit colour on a
+label opts it out of that inversion — so exactly the labels given a dark variant
+were the ones that became unreadable. Stripping every `light-dark()` and
+re-exporting produced a strictly better dark render.
+
+Existing diagrams are unaffected: `light-dark()` is draw.io's own function and
+still renders. `preview.py` greys any colour matplotlib cannot parse rather than
+failing on it.
+
+### Tooling
+
+- **`scripts/render_examples.py`** — rebuilds every example, validates it, and
+  writes `renders/<name>-{light,dark}.png`. A diagram with errors is reported
+  and not rendered. Warnings do not block, matching `validate.py`'s contract.
+- **`render_png.py` gains `--theme`** (dark / light / auto).
+- **`preview.py`** draws icons as labelled placeholders and puts a bottom
+  caption below its shape; `light()` falls back to grey instead of raising.
+- **`ruff.toml`** pins six rule families. Without a config, ruff enabled 400+
+  rules and the result depended on the installed version.
+
+### Conventions
+
+- Edge labels are **Title Case**; literal protocol and command tokens keep their
+  real casing (HTTPS, PUT, COPY).
+- Stack a label when it does not fit, not by taste: `SHORT_LABELLED_EDGE`
+  reports the exact pixels.
+- `edge()` gains **`label_bg`** so a label's plate can match the zone behind it.
+  A white plate on a tinted container reads as a sticker.
+- Never dash an `icon_node()`: `dashed=1` + `verticalAlign=top` is the
+  validator's container signature.
+- Always give a wrapper icon its brand colour, or it renders as a blank plate.
+
+### Example
+
+- **`examples/build_aws_vpc_pipeline.py`** — an AWS pipeline with a VPC nested
+  inside a cloud zone, and one embedded SVG. Validates clean.
+
+### Tests
+
+34 → 88.
+
 ## 1.2.0 — 2026-08-01
 
 From an agent's first production use of the skill (a SupernoteExport

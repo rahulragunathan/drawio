@@ -147,3 +147,18 @@ def test_half_an_anchor_pair_is_refused_at_build_time():
         edge(a, b, exitX=1)
     with pytest.raises(ValueError, match="entryX"):
         edge(a, b, entryX=0)
+
+
+def test_raw_icon_reaches_a_name_outside_the_curated_families():
+    """The catalog is a shortlist, not a whitelist. Without an escape hatch,
+    only the six families in ICON_FAMILIES are reachable — and the docs
+    promise any of draw.io's names works."""
+    helpers = load_template_helpers()
+    icon_style, raw_icon = helpers["icon_style"], helpers["raw_icon"]
+
+    stencil = icon_style(raw_icon(shape="mxgraph.veeam.vbr"))
+    image = icon_style(raw_icon(image="img/lib/ibm/analytics/analytics.svg"))
+
+    assert "shape=mxgraph.veeam.vbr;" in stencil
+    assert "shape=image;" in image
+    assert "image=img/lib/ibm/analytics/analytics.svg;" in image

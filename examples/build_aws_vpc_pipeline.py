@@ -328,6 +328,30 @@ class Svg(str):
     """An embedded SVG data URI, as returned by svg_icon()."""
 
 
+class Raw:
+    """A stencil or image name used verbatim, as returned by raw_icon()."""
+
+    def __init__(self, shape=None, image=None):
+        self.shape, self.image = shape, image
+
+
+def raw_icon(shape=None, image=None):
+    """Use a draw.io name directly, bypassing the curated catalog.
+
+    references/icons.md lists ~130 icons, but draw.io ships ~11,500. This
+    reaches the rest — an IBM, SAP or Veeam stencil, or any bundled image
+    path — without inventing a family entry for a one-off.
+
+        raw_icon(shape="mxgraph.veeam.vbr")
+        raw_icon(image="img/lib/ibm/analytics/analytics.svg")
+
+    UNKNOWN_ICON still verifies the name, so a typo here is caught.
+    """
+    if (shape is None) == (image is None):
+        raise ValueError("raw_icon() takes exactly one of shape= or image=")
+    return Raw(shape=shape, image=image)
+
+
 def svg_icon(path):
     """Embed a local SVG so the diagram carries its own artwork.
 
@@ -366,6 +390,15 @@ def icon_style(icon, placement="node", fill=None, font_color="#232F3E", font_siz
             "movable=0;resizable=0;rotatable=0;editable=0;connectable=0;"
             "drawioSkillRole=icon;"
         )
+
+    if isinstance(icon, Raw):
+        if icon.image:
+            return (
+                f"shape=image;imageAspect=0;points=[];{common}{label}"
+                f"image={icon.image};"
+            )
+        paint = f"fillColor={fill};" if fill else ""
+        return f"{common}{label}{paint}shape={icon.shape};"
 
     if isinstance(icon, Svg) or str(icon).startswith("data:"):
         return f"shape=image;imageAspect=0;points=[];{common}{label}image={icon};"

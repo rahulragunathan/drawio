@@ -25,7 +25,7 @@ Pure development needs only the folder.
 From the skill root:
 
 ```bash
-.venv/bin/python -m pytest                         # all checks
+.venv/bin/python -m pytest                         # all checks (88 tests)
 python examples/build_three_tier_web.py            # build the example
 python scripts/validate.py three-tier-web.drawio   # must be 0 violations
 python scripts/preview.py three-tier-web.drawio    # inline visual (matplotlib)
@@ -161,6 +161,39 @@ See `SKILL.md` for the full list. The load-bearing ones:
 - Reserve horizontal lanes and vertical sub-channels for parallel flows;
   offset shared corridors by ≥5 px on the perpendicular axis.
 
+## The icon catalog
+
+`references/icons.md` is both the model-facing catalog and the machine-readable
+source: `list_icons.py` parses its tables, so there is no second copy to drift.
+`assets/icon_names.txt.gz` is generated — every name draw.io ships — and is what
+`UNKNOWN_ICON` validates against.
+
+```bash
+python scripts/list_icons.py --search redis   # find a key (no draw.io needed)
+python scripts/list_icons.py --verify         # catalog vs the installed draw.io
+python scripts/list_icons.py --refresh        # regenerate icon_names.txt.gz
+```
+
+Only `--verify`, `--refresh` and `--dump-names` need draw.io installed. The
+generated file is written with `mtime=0`, so an unchanged refresh is a no-op
+diff rather than a fresh binary blob.
+
+**Three traps, each of which produces a plausible-looking result while being
+wrong.** Assert against all three when touching the extractor:
+
+- Asset paths inside `app.asar` are prefixed `drawio/src/main/webapp/`.
+  Filtering on the style-relative `img/lib/` prefix matches **nothing**.
+- The archive's data section starts at `8 + field1`, not `16 + json_length` —
+  the JSON directory is padded. The naive formula reads every file three bytes
+  early, which regex scanning tolerates, so it looks like it works.
+- The wrapper shapes that actually render vendor icons
+  (`mxgraph.aws4.resourceIcon`, `mxgraph.kubernetes.icon2`, four others) exist
+  only in draw.io's JavaScript, in no stencil file. Extracting stencil XML alone
+  still yields ~9,000 names while silently missing every AWS and Kubernetes icon.
+
+`gcp3` is a *category* set (45 broad names); the per-product GCP icons live in
+`gcp2`, so some catalog entries carry a fully qualified `mxgraph.gcp2.*` name.
+
 ## Design notes (why the validator works the way it does)
 
 Hard-won lessons that are easy to accidentally undo. Read before changing
@@ -210,6 +243,23 @@ Hard-won lessons that are easy to accidentally undo. Read before changing
   previews, but in grey rather than its authored colours. Render the PNG for
   a faithful picture of an older file. `validate.py` ignores colour entirely, so contrast
   remains an eyeball check on a real render.
+- **The endpoint exemption covers the shape, not the caption.** An edge
+  legitimately terminates on its own box's boundary, so that is exempt from
+  CROSSING. A caption rendered *below* an icon is not: a line through it reads
+  as a strikethrough. Stack two captioned glyphs, wire them together, and it
+  fires at both ends — which the old blanket exemption hid.
+- **`is_decoration` is a conjunction**, `is_icon AND child of a vertex`. Either
+  half alone breaks a real case: exempting every child loses a genuine CROSSING
+  on a box nested in a swimlane; exempting every icon wrongly exempts an
+  `icon_node()`, which *is* the shape.
+- **Measure an overlap against the rect you hit-tested.** LABEL_BOX_OVERLAP once
+  hit-tested `obstacle_rect()` but measured against the bare shape, so every
+  caption-band hit computed a negative height and was discarded as a graze — the
+  check existed but could not fire for the case it was added for.
+- **Label size is read from the style, never assumed.** The estimator is
+  `0.55 × fontSize` per character. Hard-coding fontSize 10 meant any change to
+  label size silently under-measured, and a test asserting the *default* size
+  could not catch it.
 - **Width estimation is char-count based** (`LABEL_PER_CHAR_PX = 5.5`,
   Latin sans-serif at fontSize 10). CJK / heavily-styled HTML labels are
   approximate — see SKILL.md Limitations. Tune the module constants at the

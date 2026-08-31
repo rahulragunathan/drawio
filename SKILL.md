@@ -1,7 +1,7 @@
 ---
 name: drawio
-version: 1.2.0
-description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs an eight-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING). Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
+version: 1.3.0
+description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs a nine-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON). Diagrams can carry real vendor logos — AWS, Azure, GCP, Kubernetes, Cisco — from draw.io's own stencil library, or any logo you supply as an SVG. Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
 license: MIT
 ---
 
@@ -19,18 +19,23 @@ This skill encodes those decisions explicitly. You write the coordinates; the va
 
 | Path | Purpose |
 | --- | --- |
-| `scripts/validate.py` | Geometric validator. Eight checks: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING. Run on any `.drawio` file. |
+| `scripts/validate.py` | Geometric validator. Nine checks: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON. Run on any `.drawio` file. |
 | `scripts/render_png.py` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
 | `scripts/preview.py` | Offline preview renderer. Reuses `validate.py`'s geometry, so it shows exactly what the validator sees. Approximate text wrapping — trust it for layout, not final fidelity. **Needs `matplotlib`**, which the rest of the skill does not — in a project venv without it, reach for `render_png.py` instead (the draw.io CLI is a system binary, not a venv dependency). |
-| `assets/build_template.py` | Minimal starter generator. Copy, rename, customise. Vendors the helpers (`container`, `box`, `edge`, `sub`, `desc`) inline. |
+| `scripts/render_examples.py` | Rebuilds every example, validates it, and writes `renders/<name>-light.png` and `-dark.png`. Run at the end of a piece of work: a render is where you see the problems no check can catch. |
+| `scripts/list_icons.py` | Browse the icon catalog (`--search redis`), or refresh it against a newer draw.io (`--verify`, `--refresh`). Only the refresh modes need draw.io installed. |
+| `references/icons.md` | The icon catalog: ~130 curated vendor icons as `family:name` keys, with brand colours. Read it to pick an icon. |
+| `assets/icon_names.txt.gz` | Every icon name draw.io ships (~11,500), used by `UNKNOWN_ICON` to tell a typo from a real name. Generated; do not hand-edit. |
+| `assets/build_template.py` | Minimal starter generator. Copy, rename, customise. Vendors the helpers (`container`, `box`, `edge`, `sub`, `desc`, `icon_box`, `icon_node`, `svg_icon`) inline. |
 | `examples/build_three_tier_web.py` | Comprehensive worked example: three-tier web app, 11 solid boxes, 11 edges, every locked convention exercised. Validates clean. |
+| `examples/build_aws_vpc_pipeline.py` | Worked example **with vendor icons**: an AWS pipeline, a VPC nested inside a cloud zone, and one embedded SVG for a logo draw.io does not ship. Validates clean. |
 | `tests/test_validate.py` | Pytest suite — one minimal fixture per validator check, guards for each exemption, plus a regression test on the bundled example. |
 | `tests/fixtures/builders.py` | Fixture builders that produce minimal `.drawio` files exhibiting exactly one violation type each. |
 
 ## Workflow
 
 1. **Copy the template.** `cp assets/build_template.py my-diagram.py`. Edit constants, containers, boxes, then edges.
-2. **Build.** `python my-diagram.py`. The script writes a `.drawio` file (default: cwd).
+2. **Build.** `python my-diagram.py`. For a vendor logo, find its key first: `python scripts/list_icons.py --search lambda`. The script writes a `.drawio` file (default: cwd).
 3. **Validate.** `python scripts/validate.py my-diagram.drawio`. Fix violations (see the failure-mode table below).
 4. **Open.** Drop the file at https://app.diagrams.net (no auth) or open it in draw.io Desktop. The diagram round-trips without diff churn — if you edit in Desktop and save, your generator can read the result back.
 5. **(Optional) Preview inline.** `python scripts/preview.py my-diagram.drawio` renders an approximate PNG with only matplotlib (which is *not* a dependency of the rest of the skill — in a project venv you'll often find `render_png.py` is the available path) — handy when the draw.io CLI isn't available (sandboxes, VMs). It draws the exact geometry the validator checks, so it's reliable for judging routing, lane spacing, and label placement. **It does not wrap box text the way draw.io does** — long box descriptions will overflow in the preview but wrap correctly in real draw.io, so don't trim box text based on a preview overflow alone.
@@ -43,13 +48,17 @@ These are non-negotiable; the validator, the example, and the helpers all assume
 - **Arrow colour matches the source box** (or its stroke if the fill is too light to read as a line). This is the single rule that makes a dense diagram readable — readers can follow flow by colour without re-reading labels.
 - **Future-state shape = grey/dashed; future-state arrow = grey/dashed**, NO `Future` text label. The legend strip at the bottom carries the meaning. Pass `dashed=True` to `box()` for the shape; use `style="dashed"` on `edge()` for the arrow.
 - **Edges are emitted AFTER boxes** so labels render on top. (The XML order matters in draw.io.)
-- **`labelBackgroundColor=#ffffff` on every labelled edge.** Set automatically by the `edge()` helper. Without it, labels become illegible where they cross other edges.
+- **Every labelled edge carries a background plate.** `edge()` sets one automatically; without it a label is illegible where the line runs under the text. Pass `label_bg` to match the zone the label sits over — a white plate on a tinted container reads as a sticker, while a matching one still masks the line and disappears.
 - **Multi-line edge labels use `<div>` tags, NOT `\n`.** draw.io Desktop loses `\n` on round-trip; `<div>` survives. Example: `label="Route<div>Request</div>"`.
 - **Subheadings use `sub()`** — italicised Title Case with an explicit `font-size` in the span style. Without explicit `font-size`, draw.io Desktop drops back to its default and the diagram looks inconsistent.
 - **Description bodies use `desc()`** — sentence case, non-bold, with explicit `font-size`. Same round-trip reason.
 - **Reserve horizontal corridors and vertical sub-channels** for parallel flows. Two edges sharing a corridor must offset by at least 5 px on the perpendicular axis (OVERLAP fires below 1.5 px tolerance, but 5 px gives comfortable visual separation).
 - **Choose colours for contrast and clarity.** One colour per category; let draw.io handle its own dark theme. See "Colour: contrast and clarity" below.
-- **Edge labels are verb-first.** Prefer imperatives ("Call OCR", "Publish events", "Reads index") over noun fragments ("OCR call"); stack long labels into narrow `<div>` lines to fit the channel.
+- **Edge labels are verb-first and Title Case.** Prefer imperatives ("Call OCR", "Publish Events", "Reads Index") over noun fragments ("OCR call"). Literal protocol and command tokens keep their real casing — HTTPS, PUT, COPY — because those are names, not prose.
+- **Stack a label when it does not fit, not by taste.** Two rules: (1) if the label is wider than its edge is long, stack it — `SHORT_LABELLED_EDGE` reports the exact pixels, e.g. *"is 40px long but its label needs ~66px"*; (2) on a vertical edge running through a channel, stack it so the text does not spill sideways over neighbours, which `LABEL_BOX_OVERLAP` catches. A label on a long horizontal edge needs neither.
+- **A label belongs to what it describes.** The default position is the midpoint of the edge's *longest* segment, which on an L-shaped route often lands over an unrelated box. Nudge it with `label_x` / `label_y` until it reads as belonging to its own line. No check can see this — only a render can.
+- **Never dash an `icon_node()`.** `dashed=1` plus `verticalAlign=top` is exactly the validator's container signature, so a dashed icon node is silently reclassified as a zone. Grey the fill for a future-state icon instead.
+- **Always give a wrapper icon its brand colour.** `icon_fill` on `icon_box()`, `fill` on `icon_node()`. A tile with no fill renders as a blank white plate — valid XML, clean validate, obviously wrong on screen.
 - **Keep the legend lean.** Colour + labels carry the meaning. Only state what a reader can't infer — in practice just "grey/dashed shape = future state", and nothing at all if there are no future shapes. Don't enumerate line styles the diagram uses.
 
 ## Colour: contrast and clarity
@@ -91,20 +100,97 @@ The `edge()` helper supports a few options worth reaching for:
 - **`bidirectional=True`** puts arrowheads on both ends. Use it **sparingly** — arrows are one-way by default, and direction is part of how the diagram reads. Reserve it for the rare edge where flow genuinely goes both ways (read/write to a datastore, query/response, sync). Don't reach for it just because two components talk to each other.
 - **`end_arrow=False`** drops the end arrowhead — for connector / bus / merge lines where two sources join a single producer line and a directional arrow would mislead.
 
+## Vendor logos and icons
+
+**Plain boxes and logo icons are both first-class.** Use plain `box()` when the
+shapes are generic or vendor-neutral — "Web Service", "Message Queue", a trust
+boundary. Use an icon when the diagram is about *specific named services*, where
+an AWS Lambda mark says in one glyph what a label would spend three words on.
+Logos are additive: `box()` and `container()` are unchanged, so a diagram without
+them behaves exactly as it always did.
+
+### The two placements
+
+```python
+# Default: glyph inside a labelled card. The card keeps the exact geometry,
+# anchors and routing of a plain box(), so icons cost nothing in layout terms.
+icon_box(
+    620,
+    160,
+    220,
+    64,
+    "<b>Fargate</b>",
+    fill=COMPUTE,
+    icon="aws:fargate",
+    icon_fill=COMPUTE,
+)
+
+# Alternative: bare glyph with its name underneath, the vendor-docs look.
+icon_node(620, 160, "Fargate", icon="aws:fargate", fill=COMPUTE)
+```
+
+**Prefer `icon_box()`.** An `icon_node()` caption is wider than the 48 px glyph
+it belongs to, so an edge leaving the glyph's bottom runs through its own label.
+The validator catches it (CROSSING names the caption), but the fix is layout, and
+`icon_box()` avoids the problem entirely by keeping the label inside the card.
+Reach for `icon_node()` when you want the vendor-reference-architecture look and
+can route edges sideways.
+
+### Choosing an icon
+
+Names live in `references/icons.md` as `family:name` — `aws:lambda`,
+`azure:compute/Function_Apps.svg`, `gcp:bigquery`, `k8s:pod`, `cisco:l3_switch`.
+`python scripts/list_icons.py --search redis` finds one. The catalog is ~130
+curated entries, but **any** of draw.io's ~11,500 names works — it is a
+shortlist, not a whitelist. For a name outside the curated families, use the
+escape hatch:
+
+```python
+icon_box(..., icon=raw_icon(shape="mxgraph.veeam.vbr"))
+icon_box(..., icon=raw_icon(image="img/lib/ibm/analytics/analytics.svg"))
+```
+
+`UNKNOWN_ICON` still verifies the name, so a typo is caught either way.
+
+Pass the vendor's brand colour as `icon_fill`. A wrapper tile with no fill
+renders as a **blank white plate** — the most common icon mistake after a
+mistyped name, and one only a render will show you.
+
+### A logo draw.io does not ship
+
+```python
+icon_box(
+    40, 320, 200, 64, "<b>Snowflake</b>", fill=SNOW, icon=svg_icon("snowflake.svg")
+)
+```
+
+`svg_icon()` embeds the file as a base64 data URI, so the artwork travels inside
+the `.drawio`. Use it for anything outside the bundled sets — Snowflake,
+Databricks, Datadog, a client's mark.
+
+### What a logo costs
+
+A stencil name (`shape=mxgraph.aws4.lambda`) and a bundled image path are
+*references*: the artwork lives in draw.io, not in your file. That is fine
+wherever the file is opened — app.diagrams.net and Desktop both ship the same
+library — but a non-draw.io renderer draws nothing. `svg_icon()` has no such
+dependency, and neither does a plain `box()`.
+
 ## The validator checks
 
 Checks are split into two severities. **Errors** fail the build (non-zero exit); **warnings** are advisory — they surface a real but often-tolerable issue and print without blocking. The CLI prints `✗` for errors and `⚠` for warnings and exits non-zero only when an error fired.
 
 | Check | Severity | What it flags | Common cause |
 | --- | --- | --- | --- |
-| `CROSSING` | error | An edge segment passes through the interior (with a 2 px buffer) of a solid box that's neither the source nor the target. | Forgot a waypoint that routes around an intermediate box. |
+| `CROSSING` | error | An edge segment passes through the interior (with a 2 px buffer) of a solid box that's neither the source nor the target — including the caption band beneath a bottom-labelled icon. The source/target exemption covers the **shape** only: an edge crossing its *own* caption still fires, because a caption is text, not a connection surface. A glyph nested inside a card is skipped, since the card is already checked at those coordinates. | Forgot a waypoint that routes around an intermediate box; or wired two captioned `icon_node()` glyphs vertically, which strikes a line through both labels. |
 | `OVERLAP` | error | Two edge segments share 8+ px on the same axis-aligned line (within 1.5 px perpendicular tolerance). | Two edges share an exit anchor, or two parallel routes share the same lane/channel without offset. |
 | `TEXT_OVERLAP` | error | An edge segment passes through the top 28 px title band of a dashed container that's neither source nor target. **Exempt:** a *vertical* segment on an edge whose source or target box sits geometrically inside that container — entering a zone to reach a box in it isn't cutting across its title. | Routed an arrow *along* the top of a zone container instead of through the gap above it. (Entering the zone from above or below is fine.) |
-| `LABEL_OVERLAP` | error | Two edge labels' estimated bounding boxes intersect by ≥8 px on their shorter axis (width ≈ 5.5 px/char at fontSize 10; HTML tags and `&nbsp;`/`&amp;`/`&lt;`/`&gt;`/`&quot;`/`&#39;` stripped before measuring). Sub-8 px grazes are skipped — the labels' white backgrounds mask them. | Two labels default-positioned at the same segment midpoint, or a `label_y` offset that lands one label on top of another. |
+| `LABEL_OVERLAP` | error | Two edge labels' estimated bounding boxes intersect by ≥8 px on their shorter axis (width ≈ 0.55 × the label's own fontSize per char; HTML tags and `&nbsp;`/`&amp;`/`&lt;`/`&gt;`/`&quot;`/`&#39;` stripped before measuring). Sub-8 px grazes are skipped — the labels' white backgrounds mask them. | Two labels default-positioned at the same segment midpoint, or a `label_y` offset that lands one label on top of another. |
 | `LABEL_BOX_OVERLAP` | warning | An edge label's bounding box overlaps a solid box (neither source nor target; containers exempt) by ≥8 px on its shorter axis. | A label parked over an unrelated box, or a side-channel label whose text extends back over the boxes it's routing past. Often reads fine thanks to the label's white background — hence a warning, not an error. |
-| `SHORT_LABELLED_EDGE` | warning | A labelled edge's total rendered length is shorter than its own label's estimated text width (same ~5.5 px/char estimator, padding excluded). | Two boxes placed a 40 px gap apart with a 13-character label between them. The label overhangs *both* boxes — but by less than the 8 px `LABEL_BOX_OVERLAP` threshold on each side, and both are the edge's own endpoints, so nothing else sees it. Renders as a stub arrow with a floating caption. Fix by widening the gap or stacking the label into narrower `<div>` lines. |
+| `SHORT_LABELLED_EDGE` | warning | A labelled edge's total rendered length is shorter than its own label's estimated text width (same per-character estimator, scaled to the label's fontSize, padding excluded). | Two boxes placed a 40 px gap apart with a 13-character label between them. The label overhangs *both* boxes — but by less than the 8 px `LABEL_BOX_OVERLAP` threshold on each side, and both are the edge's own endpoints, so nothing else sees it. Renders as a stub arrow with a floating caption. Fix by widening the gap or stacking the label into narrower `<div>` lines. |
 | `DIAGONAL` | warning | An **interior** (waypoint-to-waypoint) segment is neither horizontal nor vertical. Anchor stubs are auto-squared into the L-bend draw.io renders, so this fires only when two explicit waypoints are offset on both axes — a route draw.io would square too, making it non-deterministic. | Two waypoints placed without an aligning corner between them. Add the intermediate waypoint. |
 | `DANGLING` | error | An edge's `source` or `target` id doesn't resolve to any shape. | A typo in an id, or a box deleted/renamed without updating the edge. The edge would render detached in draw.io. |
+| `UNKNOWN_ICON` | warning | A cell's stencil, `resIcon`/`prIcon` or image name is not one draw.io ships, or it is a remote URL that only renders where the host is reachable. Suggests the closest real name. | A mistyped stencil name — which draw.io renders as an empty shape and reports no error for, so nothing else catches it. Skipped entirely when `assets/icon_names.txt.gz` is missing. |
 
 When violations fire, the message includes the involved edge labels and the offending segment coordinates (and, for overlaps, the overlap size in px) — usually enough to identify the fix without opening the diagram.
 
@@ -162,10 +248,13 @@ The validator is a 2D geometric check with a few known blind spots. None of thes
 
 - **Non-rectangular containers.** The validator detects containers as `rectangle + dashed stroke`. Ellipses, swimlane shapes, and BPMN groups are treated as solid boxes and will trip CROSSING if an arrow passes through them. Use rectangular dashed containers for zones, or wrap an ellipse in a transparent dashed rectangle.
 - **Intentional parallel edges.** Two edges that *should* run side by side (e.g. "request" and "response" on the same connection) need to be at least 5 px apart on the perpendicular axis. Below 1.5 px the validator merges them into one segment for OVERLAP purposes; 1.5–5 px clears the validator but is visually hard to distinguish.
-- **CJK and heavily-styled HTML labels.** Width estimation uses `5.5 px/char` calibrated for Latin sans-serif at fontSize 10. Chinese/Japanese/Korean characters are wider; HTML tags are stripped before counting but `<font>`/`<b>`/inline styles aren't measured. For diagrams with mostly-CJK labels, expect occasional false negatives on LABEL_OVERLAP and tune `label_x`/`label_y` by hand.
+- **CJK and heavily-styled HTML labels.** Width estimation uses `0.55 × fontSize` per character, calibrated for Latin sans-serif. Chinese/Japanese/Korean characters are wider; HTML tags are stripped before counting but `<font>`/`<b>`/inline styles aren't measured. For diagrams with mostly-CJK labels, expect occasional false negatives on LABEL_OVERLAP and tune `label_x`/`label_y` by hand.
 - **Edge ordering matters for layering.** Boxes must be emitted before edges in the XML for labels to render on top. The bundled `edge()` helper relies on the caller to call `box()` first.
 - **A clean validate says nothing about whether labels have *room*.** `SHORT_LABELLED_EDGE` catches the extreme case (label wider than its whole edge), but a label that technically fits in a 50 px column gap while looking cramped, or one whose estimated width is a character or two off the truth, passes silently. Render the PNG and look at it — that pass catches label-geometry problems no check sees.
 - **Colour and contrast are invisible to the validator.** It ignores colour entirely. A clean validate says nothing about whether the diagram is readable — render the PNG and look at it.
+- **Icons are references, not artwork.** A stencil name or a bundled image path resolves against the renderer: fine in draw.io (browser or Desktop), blank in anything else. `svg_icon()` embeds its bytes and has no such dependency. `UNKNOWN_ICON` verifies a name against the draw.io build the catalog was generated from, so a genuinely newer stencil warns until you run `list_icons.py --refresh`.
+- **`preview.py` draws icons as placeholders, not glyphs.** It shows where an icon sits and how much space it takes, labelled with the icon's short name. It also greys any colour matplotlib cannot parse rather than failing. Render the PNG to see the real logo and the real colours.
+- **A blank icon plate validates clean.** A wrapper tile with no `icon_fill` renders as an empty white square; the XML is valid and every check passes. Only a render shows it.
 - **Semantic correctness is a human review item.** A managed service drawn inside a cluster zone, a mislabeled flow, or the wrong trust boundary all validate fine. "Validates clean" is necessary, not sufficient — the finishing pass (theme, label wording, zone membership, balance) is done by eye in Desktop.
 - **Desktop round-trip artifacts are normal.** After hand-editing in draw.io Desktop, a re-saved file picks up fractional `entryX`/`exitX` (e.g. `0.911`), explicit `entryPerimeter=0`, `sourcePoint`/`targetPoint` mxPoints, separate `edgeLabel` child cells, and `host="Electron"`. These are harmless — don't "fix" them. Treat the generator output as a clean, validated **baseline to refine in Desktop**; if you need to change it, regenerate from the script rather than diffing against the hand-tuned XML.
 
@@ -179,7 +268,7 @@ This skill keeps the helpers (`container`, `box`, `edge`, `sub`, `desc`) vendore
 
 If you find yourself copying the helpers across many diagrams in the same repo, factor *those repo-internal helpers* into a local module — but don't take the skill in that direction.
 
-**Expect the host repo's formatter to reflow the vendored helpers.** `ruff format` / `black` at a 100-char line length will explode the compact multi-arg signatures onto one-arg-per-line, taking the helpers from ~80 lines to ~200. That's correct behaviour — run the repo's formatter and commit the result; don't fight it, and don't try to diff the copy against this skill's template to check for drift (the reflow makes that diff useless). If you want a skill update, re-copy the template and re-apply your local customisations.
+**The vendored helpers are already `ruff format`-clean at 88 columns**, so a host repo running `ruff format` or `black` should leave them alone rather than reflowing them — which also means a copy stays diffable against this template. At a different line length you will still see churn; that's correct behaviour, so run the repo's formatter and commit the result. To pick up a skill update, re-copy the template and re-apply your local customisations.
 
 ## Installation
 
@@ -191,7 +280,8 @@ To package the skill as a `.skill` file (a zip with a `.skill` extension) for up
 
   ```bash
   cd <parent-of-drawio>
-  zip -r drawio.skill drawio -x '*/__pycache__/*' '*/.pytest_cache/*'
+  zip -r drawio.skill drawio -x '*/__pycache__/*' '*/.pytest_cache/*' \
+      '*/.ruff_cache/*' '*/.git/*' '*/.venv/*' '*/renders/*'
   ```
 
 - Or, if the `skill-creator` skill is installed, run its `package_skill.py`
@@ -206,7 +296,7 @@ For local-only use with Claude Code, drop the unpacked skill folder into `~/.cla
 
 ```bash
 cd drawio
-python -m pytest        # runs all 34 tests
+python -m pytest        # runs all 88 tests
 ```
 
 `tests/test_render_png.py` covers `render_png.py`'s argument contract (`-o` / `--output`, and every invocation it rejects), faking `subprocess.run` at the system boundary so it runs without the draw.io CLI installed. `tests/test_validate.py` covers each validator check independently (a clean fixture plus one fixture per failure mode), the exemption guards (stub-squaring, point-anchored edges, and entering a container from above — each of which must NOT fire), a narrow-exemption guard (a segment running *along* a title band still fires even when both endpoints are inside the container), label-normalisation cases, plus a regression test that runs `examples/build_three_tier_web.py` end-to-end and asserts a clean validation. If you change `scripts/validate.py` or `scripts/render_png.py`, run the tests before committing.
