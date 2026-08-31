@@ -584,8 +584,12 @@ edge(
     # The longest segment's midpoint (x=706) lands over the Background
     # Worker, so the label reads as the worker's. Pulled back to where the
     # line leaves Web Service, which is what it describes.
+    #
+    # label_y sits it flush on its own y=284 lane. It cannot drop further:
+    # the dotted Read lane is only 12px below at y=296, and a label wide
+    # enough to reach it would mask a line belonging to a different edge.
     label_x=-140,
-    label_y=-20,
+    label_y=-14,
 )
 
 # 8. Web -> Message Queue (source = green). Lane y=425 (below the row),
