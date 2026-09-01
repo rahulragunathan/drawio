@@ -22,22 +22,7 @@ nothing. IDs are never reused.
 
 ---
 
-<a id="unk-01"></a>
-## UNK-01 — Should the missing v1.3.0 tag be backfilled?
-
-**Kind:** Decision
-**Where:** git history
-
-`git tag` lists only `v1.2.0`. Release 1.3.0 was cut in CHANGELOG.md and in the `SKILL.md`
-frontmatter on 2026-08-31, and four commits have landed on `main` since, but no `v1.3.0` tag
-was ever pushed. The phase workflow tags in the merge cycle, so this is a gap in the one
-release that predates the workflow being applied here, not a habit.
-
-The consequence is small but real: `git describe` and any "what changed since 1.3.0" diff
-have no anchor, and the next release cannot be compared against its predecessor. It also
-means the CHANGELOG compare link for 1.3.0 has nothing to point at.
-
-**What settles it:** decide whether to tag `796f084` — "Documentation pass for 1.3.0 (phase
-4b)", the last commit of that release — as `v1.3.0` retroactively, or to accept the gap and
-start clean tagging from the next release. Backfilling costs one command and makes the
-compare links in CHANGELOG.md work; leaving it means the 1.3.0 link stays broken or absent.
+Nothing is open. Settled questions leave this file: into the code plus a CHANGELOG entry
+if they changed anything, into KNOWN_ISSUES or ENHANCEMENTS if they became work, or into
+"Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md) if the answer was to do
+nothing.

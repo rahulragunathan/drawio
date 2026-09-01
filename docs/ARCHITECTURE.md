@@ -61,11 +61,15 @@ Two decisions shape the rest of the module:
   and every function defaults to them. Tuning for a denser diagram is a one-line
   change in one place.
 
-`scripts/preview.py` and `scripts/render_png.py` both import that geometry
-rather than re-deriving it, so a preview shows exactly what the checks see. They
-differ only in what draws the pixels: preview uses matplotlib and is
-approximate; `render_png.py` shells out to the draw.io Desktop CLI and is
-pixel-accurate. `scripts/render_examples.py` drives both — it rebuilds every
+`scripts/preview.py` imports that geometry rather than re-deriving it, so the
+preview shows exactly what the checks see. It draws with matplotlib and is
+approximate. `scripts/render_png.py` shares nothing with the validator — it
+hands the `.drawio` file to the draw.io Desktop CLI, which does its own parsing
+and renders pixel-accurately. That is the point of keeping both: one shows the
+validator's view of the diagram, the other shows draw.io's.
+
+`scripts/render_examples.py` combines the validator with the CLI renderer — it
+imports `validate` and `render_png` (not `preview`), rebuilds every
 `examples/build_*.py`, validates the result, and renders the clean ones into
 `renders/` in light and dark. A diagram with errors is reported and not
 rendered.
@@ -102,7 +106,8 @@ the product, so a change in geometry shows as a changed picture.
 |-------|-------|
 | A generator, `validate.py`, `list_icons.py --search`, `package_skill.py` | Python 3.10+, stdlib only |
 | `preview.py` | matplotlib |
-| `render_png.py`, `render_examples.py`, `list_icons.py --refresh` | draw.io Desktop CLI on `PATH` |
+| `render_png.py`, `render_examples.py` | draw.io Desktop CLI on `PATH` |
+| `list_icons.py --verify` / `--refresh` / `--dump-names` | draw.io Desktop **installed** — it reads `app.asar` from the app bundle directly (override with `$DRAWIO_APP`), and never touches `PATH` |
 
 The split matters in a sandbox. Inside an isolated VM the host's `drawio` binary
 is usually unreachable, so `render_png.py` reports "drawio CLI not found" and

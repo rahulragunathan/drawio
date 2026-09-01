@@ -352,7 +352,7 @@ render_png = box(
     280,
     190,
     60,
-    "<b>scripts/render_png.py</b><br>" + desc("draw.io CLI"),
+    "<b>scripts/render_png.py</b><br>" + desc("Shells out to the draw.io CLI"),
     fill=COLOR_CHECK,
     bold=False,
 )
@@ -401,7 +401,7 @@ catalog = box(
     590,
     250,
     52,
-    "<b>references/icons.md</b><br>" + desc("~130 curated icons"),
+    "<b>references/icons.md</b><br>" + desc("128 curated icons"),
     fill=COLOR_CATALOG,
     bold=False,
 )
@@ -453,6 +453,9 @@ edge(
 
 # Both renderers import the validator's geometry, so a preview shows exactly
 # what the checks see.
+# Only preview.py reuses the validator's geometry. render_png.py hands the
+# file to the draw.io CLI, which parses it itself — so there is deliberately
+# no arrow from render_png.py to validate.py.
 edge(
     preview,
     validator,
@@ -461,16 +464,6 @@ edge(
     exitX=0.5,
     exitY=0,
     entryX=0.25,
-    entryY=1,
-)
-edge(
-    render_png,
-    validator,
-    color=COLOR_CHECK,
-    label="Imports",
-    exitX=0.5,
-    exitY=0,
-    entryX=0.77,
     entryY=1,
 )
 edge(
