@@ -20,24 +20,19 @@ completion is deleted from both, with the record written into CHANGELOG `[Unrele
 item dropped rather than built moves to "Decisions taken and not taken". IDs are never
 reused. Nothing here looks backward — completed phases are CHANGELOG releases.
 
-**Last Updated**: 2026-09-01 (external repo review triaged; UNK-01 settled)
+**Last Updated**: 2026-09-01 (documentation pass against the current standards)
 
 ## Status
 
 The skill is stable at 1.4.1 and in real use. The icon catalog and the two worked examples
-are settled; the validator is not as settled as 1.4.0 assumed. An external review by
-gpt-5.6-sol and gemini-3.1-pro-high found four High defects, all of them in how a `.drawio`
-file is *read* rather than in any individual check — compressed files, multi-page files,
-round-tripped labels and anchor-direction stubs. Each one makes the validator report clean
-on a diagram it never actually examined, which is the failure mode the whole tool exists to
-prevent.
-
-The queue is therefore KI-02 through KI-05 first, bundled roughly as written: the two
-file-reading defects together, then the three label-reading ones.
+are settled; four High defects are open against the validator, all of them in how a
+`.drawio` file is read rather than in any individual check. Each one lets the validator
+report clean on a diagram it never examined, so they lead the queue.
 
 ### Phases
 
-No phase is in flight. The queue is KI-02 through KI-05.
+No phase is in flight. Next is KI-02 through KI-05, bundled as the two file-reading defects
+and then the three label-reading ones.
 
 ## Known Issues
 

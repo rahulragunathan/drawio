@@ -65,7 +65,7 @@ match the rest of the project's commands.
 ## ENH-03 — Mark a container explicitly instead of inferring it from its style
 
 **Priority:** Medium · **Effort:** ~3 hours
-**Where:** [scripts/validate.py:402-405](../scripts/validate.py#L402-L405) · [assets/build_template.py](../assets/build_template.py) · **Regression net:** `tests/test_validate.py`
+**Where:** [scripts/validate.py:403-405](../scripts/validate.py#L403-L405) · [assets/build_template.py](../assets/build_template.py) · **Regression net:** `tests/test_validate.py`
 
 ### What it is
 
@@ -79,7 +79,9 @@ files the skill did not generate.
 Container detection currently reads presentation as meaning:
 
 ```python
-is_container = style_d.get("dashed") == "1" and style_d.get("verticalAlign") == "top"
+is_container = (
+    style_d.get("dashed") == "1" and style_d.get("verticalAlign") == "top"
+)
 ```
 
 Being classified as a container has real consequences — the shape is skipped entirely by
@@ -103,6 +105,7 @@ note when the marker lands, and add a fixture for a dashed top-aligned shape car
 marker (still a container) and one carrying `drawioSkillRole=box` (not a container).
 
 **Source:** gpt-5.6-sol — repo review, 1.4.0
+
 ---
 
 <a id="enh-04"></a>
@@ -146,6 +149,7 @@ target's content never appears in the archive. Note that `skill_root` itself is 
 the top of the function already, so compare against the resolved root.
 
 **Source:** gpt-5.6-sol — repo review, 1.4.0
+
 ---
 
 <a id="enh-02"></a>
@@ -207,8 +211,8 @@ The names simply come out incomplete, `--refresh` writes the smaller list, and f
 `UNKNOWN_ICON` warns about perfectly valid stencils — a slow, confusing failure that looks
 like a catalog problem rather than a bad refresh.
 
-The input is a local, trusted app bundle (or `$DRAWIO_APP`), so this is about corruption,
-not attack. The offset arithmetic itself is correct and load-bearing —
+The input is a local, trusted app bundle (or `$DRAWIO_APP`), so this is about corruption
+rather than attack. The offset arithmetic itself is correct and must stay as it is;
 [CLAUDE.md](../CLAUDE.md) records why `8 + field1` is the right formula.
 
 ### Notes for the work

@@ -52,15 +52,11 @@ stale render is worse than none, because it is reviewed as if it were current.
 The same applies to `docs/architecture.png`: regenerate, validate and re-render
 it whenever the module structure moves.
 
-The renders are committed. For a diagramming skill they are the product, so the
-repo records what each phase actually looked like; a diff that changes geometry
-should show a changed picture.
-
 Three things worth knowing:
 
-- **Both themes, every time.** The skill stopped authoring dark colours in
-  1.3.0, but draw.io still inverts them on export and its choices still have to
-  be looked at. Light-only review misses that entirely.
+- **Both themes, every time.** The skill authors one colour per thing and
+  draw.io inverts them on export, so its choices show up only in a dark render.
+  A light-only review misses them.
 - **A diagram with violations is reported and not rendered.** Reviewing a
   picture of a layout the validator already rejected wastes the review.
 - **A clean validate is not the bar.** Every genuinely interesting defect found
@@ -128,11 +124,13 @@ replacing the previous version.
   descriptions overflow in the preview but wrap fine in real draw.io. Do not trim
   box text on a preview overflow alone — size the box for the wrapped text
   (≈ `width / 6` chars per line at fontSize 10–11) instead.
-- `scripts/render_png.py` needs the draw.io Desktop CLI on `PATH`. Inside an
-  isolated VM (Cowork runs shell and code in a VM separate from the host OS) the
-  host-installed `drawio` binary is typically not reachable, so `render_png.py`
-  reports "drawio CLI not found." Use `preview.py` for inline checks and open the
-  `.drawio` in draw.io Desktop on the host for pixel-accurate output.
+- `scripts/render_png.py` needs the draw.io Desktop CLI on `PATH`, or the macOS
+  app bundle at `/Applications/draw.io.app`, which it detects on its own. Inside
+  an isolated VM (Cowork runs shell and code in a VM separate from the host OS)
+  the host-installed `drawio` binary is typically not reachable, so
+  `render_png.py` reports "drawio CLI not found." Use `preview.py` for inline
+  checks and open the `.drawio` in draw.io Desktop on the host for
+  pixel-accurate output.
 
 ## Tunable knobs
 
@@ -155,8 +153,8 @@ python scripts/list_icons.py --refresh        # regenerate icon_names.txt.gz
 ```
 
 Only `--verify`, `--refresh` and `--dump-names` need draw.io installed. The
-generated file is written with `mtime=0`, so an unchanged refresh is a no-op diff
-rather than a fresh binary blob.
+generated file is written with `mtime=0`, so an unchanged refresh leaves it
+byte-identical instead of writing a fresh binary blob.
 
 The three extraction traps that produce a plausible-but-wrong result are in
 [CLAUDE.md](../CLAUDE.md) — read them before touching the extractor.

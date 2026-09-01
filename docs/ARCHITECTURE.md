@@ -50,7 +50,7 @@ verify, or a character-count label width — which is why they do not block.
 
 Two decisions shape the rest of the module:
 
-- **Reconstruction, not reading.** draw.io does not store the route it draws. It
+- **Routes are reconstructed.** draw.io does not store the route it draws. It
   stores anchors and waypoints and applies `orthogonalEdgeStyle` at render time.
   `edge_polyline` reproduces that, including squaring the source and target
   stubs into the L-bends draw.io renders. Every check runs on the reconstructed
@@ -78,14 +78,17 @@ rendered.
 
 `references/icons.md` is both the model-facing catalog and the machine-readable
 source: `list_icons.py` parses its tables, so there is no second copy to drift.
-It holds ~130 curated `family:name` keys with brand colours.
+It holds 128 curated entries with brand colours, keyed as `family-name`
+(`aws-lambda`). The generator helpers take the colon form (`aws:lambda`); the
+mismatch between the two is tracked as KI-01.
 
 `assets/icon_names.txt.gz` is the other half — every name draw.io ships, about
 11,500 of them, extracted from a draw.io Desktop `app.asar` by
 `list_icons.py --refresh`. `UNKNOWN_ICON` checks against it, which is what turns
 a mistyped stencil (draw.io renders those as an empty shape and reports nothing)
 into a warning with a did-you-mean. The file is written with `mtime=0`, so an
-unchanged refresh is a no-op diff rather than a fresh binary blob.
+unchanged refresh leaves it byte-identical instead of writing a fresh binary
+blob.
 
 Only `--verify`, `--refresh` and `--dump-names` need draw.io installed. Building
 and validating a diagram never does.
@@ -97,8 +100,9 @@ the archive never contains a stale copy of itself. It excludes hidden entries by
 rule rather than by name, plus `renders/`, `docs/` and `__pycache__`. What
 remains is what a user installs.
 
-`renders/` is committed and reviewed. For a diagramming skill the pictures are
-the product, so a change in geometry shows as a changed picture.
+`renders/` is committed and reviewed at the end of a phase.
+[CLAUDE.md](../CLAUDE.md) records why it is kept in the repo and out of the
+archive.
 
 ## What runs where
 
@@ -106,7 +110,7 @@ the product, so a change in geometry shows as a changed picture.
 |-------|-------|
 | A generator, `validate.py`, `list_icons.py --search`, `package_skill.py` | Python 3.10+, stdlib only |
 | `preview.py` | matplotlib |
-| `render_png.py`, `render_examples.py` | draw.io Desktop CLI on `PATH` |
+| `render_png.py`, `render_examples.py` | draw.io Desktop CLI on `PATH`, or the macOS app bundle at `/Applications/draw.io.app` |
 | `list_icons.py --verify` / `--refresh` / `--dump-names` | draw.io Desktop **installed** — it reads `app.asar` from the app bundle directly (override with `$DRAWIO_APP`), and never touches `PATH` |
 
 The split matters in a sandbox. Inside an isolated VM the host's `drawio` binary
@@ -130,7 +134,7 @@ asserts the shape of the archive, not the mechanics of zipping.
 ## Known limits of the approach
 
 The validator is a 2D geometric check. It says nothing about colour, contrast,
-wording, or whether a managed service was drawn inside the wrong trust boundary.
-It cannot see whether a label that technically fits looks cramped. SKILL.md
-lists the blind spots in full under "Limitations"; the operative consequence is
-that rendering the PNG and looking at it is part of the loop, not an extra.
+wording, or whether a managed service was drawn inside the wrong trust boundary,
+and it cannot see whether a label that technically fits looks cramped.
+[SKILL.md](../SKILL.md) lists the blind spots in full under "Limitations". That
+is why rendering the PNG and looking at it is a step of the loop.

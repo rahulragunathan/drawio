@@ -12,6 +12,34 @@ entry in sync with it before packaging. See
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-09-01 — Documentation standards refresh
+
+### Fixed
+
+- **`docs/ARCHITECTURE.md` stated the icon catalog's size and key format wrongly.**
+  It said "~130 `family:name` keys"; the catalog holds 128 entries and spells them
+  with a hyphen (`aws-lambda`), the mismatch with the helpers' colon form that
+  KI-01 tracks.
+- **`docs/ARCHITECTURE.md` and `docs/CONTRIBUTING.md` no longer require the
+  draw.io CLI on `PATH`.** `render_png.py` also finds the macOS app bundle at
+  `/Applications/draw.io.app` on its own.
+- **Two `docs/ENHANCEMENTS.md` entries rendered their `Source:` line as a
+  heading.** They ran straight into the `---` rule with no blank line, which
+  Markdown reads as a setext heading. ENH-03's cited line range and code excerpt
+  now match `validate.py` as it stands.
+
+### Changed
+
+- **Removed text that stood in two places.** `docs/OPEN_QUESTIONS.md` repeated its
+  own header paragraph as its empty state; `docs/ROADMAP.md` gave the queue in
+  both Status and Phases; the reason `renders/` is committed stood in three files
+  and now stands only in `CLAUDE.md`.
+- **`docs/ROADMAP.md`'s Status is an index again**, not a summary of the four open
+  High issues that the table below it already lists.
+- **`docs/CONTRIBUTING.md` describes the present.** Its dark-theme review step no
+  longer explains itself through the 1.3.0 removal, which is history and belongs
+  in this file.
+
 ## [1.4.1] - 2026-09-01 — External review intake
 
 ### Fixed
@@ -354,7 +382,8 @@ Capabilities at 1.0.0:
 
 ## Reference
 
-- [Unreleased](https://github.com/rahulragunathan/drawio/compare/v1.4.1...HEAD)
+- [Unreleased](https://github.com/rahulragunathan/drawio/compare/v1.4.2...HEAD)
+- [1.4.2](https://github.com/rahulragunathan/drawio/compare/v1.4.1...v1.4.2)
 - [1.4.1](https://github.com/rahulragunathan/drawio/compare/v1.4.0...v1.4.1)
 - [1.4.0](https://github.com/rahulragunathan/drawio/compare/v1.3.0...v1.4.0)
 - [1.3.0](https://github.com/rahulragunathan/drawio/compare/v1.2.0...v1.3.0)
