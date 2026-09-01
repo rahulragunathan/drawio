@@ -40,6 +40,7 @@ drawio/
 ├── renders/                          ← Current PNGs of both examples, light + dark
 ├── docs/                             ← Maintainer docs; not shipped in the package
 │   ├── ARCHITECTURE.md               ← How the pieces fit, with a generated diagram
+│   ├── build_architecture.py         ← Its generator; source + render sit beside it
 │   ├── CONTRIBUTING.md               ← Maintainer loop (refine / package / install)
 │   ├── ROADMAP.md                    ← What is still open (index)
 │   └── KNOWN_ISSUES.md · ENHANCEMENTS.md · OPEN_QUESTIONS.md

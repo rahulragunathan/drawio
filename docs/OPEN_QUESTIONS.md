@@ -22,7 +22,4 @@ nothing. IDs are never reused.
 
 ---
 
-Nothing is open. Settled questions leave this file: into the code plus a CHANGELOG entry
-if they changed anything, into KNOWN_ISSUES or ENHANCEMENTS if they became work, or into
-"Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md) if the answer was to do
-nothing.
+Nothing is open.

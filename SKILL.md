@@ -1,6 +1,6 @@
 ---
 name: drawio
-version: 1.4.1
+version: 1.4.2
 description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs a nine-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON). Diagrams can carry real vendor logos — AWS, Azure, GCP, Kubernetes, Cisco — from draw.io's own stencil library, or any logo you supply as an SVG. Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
 license: MIT
 ---
