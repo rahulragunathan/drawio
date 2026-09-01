@@ -17,7 +17,7 @@ The full reference is in `SKILL.md`. This README is a 30-second tour.
 drawio/
 ├── SKILL.md                          ← Read this first
 ├── README.md                         ← This file
-├── CONTRIBUTING.md                   ← Maintainer loop (refine / package / install)
+├── CLAUDE.md                         ← Repo conventions and settled decisions
 ├── CHANGELOG.md                      ← Version history
 ├── LICENSE                           ← MIT
 ├── pytest.ini · ruff.toml · requirements*.txt
@@ -26,21 +26,27 @@ drawio/
 │   ├── preview.py                    ← Offline matplotlib preview (no CLI needed)
 │   ├── render_png.py                 ← drawio Desktop CLI wrapper (pixel-accurate)
 │   ├── render_examples.py            ← Rebuild every example → renders/, light + dark
+│   ├── package_skill.py              ← Build the uploadable ../drawio.skill
 │   └── list_icons.py                 ← Browse / verify / refresh the icon catalog
 ├── assets/
 │   ├── build_template.py             ← Minimal starter to copy
 │   └── icon_names.txt.gz             ← Every icon name draw.io ships (generated)
 ├── references/
-│   └── icons.md                      ← ~130 curated vendor icons, with brand colours
+│   └── icons.md                      ← 128 curated vendor icons, with brand colours
 ├── examples/
 │   ├── build_three_tier_web.py       ← Worked example, validates clean
 │   ├── build_aws_vpc_pipeline.py     ← Worked example with vendor icons
 │   └── snowflake.svg                 ← A logo draw.io does not ship
 ├── renders/                          ← Current PNGs of both examples, light + dark
+├── docs/                             ← Maintainer docs; not shipped in the package
+│   ├── ARCHITECTURE.md               ← How the pieces fit, with a generated diagram
+│   ├── CONTRIBUTING.md               ← Maintainer loop (refine / package / install)
+│   ├── ROADMAP.md                    ← What is still open (index)
+│   └── KNOWN_ISSUES.md · ENHANCEMENTS.md · OPEN_QUESTIONS.md
 └── tests/
     ├── test_validate.py              ← One test per validator check
     ├── test_icons.py · test_list_icons.py · test_preview.py
-    ├── test_render_png.py · test_render_examples.py
+    ├── test_render_png.py · test_render_examples.py · test_package_skill.py
     └── fixtures/
         └── builders.py               ← Minimal fixture generators
 ```

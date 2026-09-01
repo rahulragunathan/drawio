@@ -1,6 +1,6 @@
 ---
 name: drawio
-version: 1.3.0
+version: 1.4.0
 description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs a nine-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON). Diagrams can carry real vendor logos — AWS, Azure, GCP, Kubernetes, Cisco — from draw.io's own stencil library, or any logo you supply as an SVG. Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
 license: MIT
 ---
@@ -20,12 +20,12 @@ This skill encodes those decisions explicitly. You write the coordinates; the va
 | Path | Purpose |
 | --- | --- |
 | `scripts/validate.py` | Geometric validator. Nine checks: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON. Run on any `.drawio` file. |
-| `scripts/render_png.py` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
+| `scripts/render_png.py` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere; `--theme dark\|light\|auto`). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
 | `scripts/preview.py` | Offline preview renderer. Reuses `validate.py`'s geometry, so it shows exactly what the validator sees. Approximate text wrapping — trust it for layout, not final fidelity. **Needs `matplotlib`**, which the rest of the skill does not — in a project venv without it, reach for `render_png.py` instead (the draw.io CLI is a system binary, not a venv dependency). |
 | `scripts/render_examples.py` | Rebuilds every example, validates it, and writes `renders/<name>-light.png` and `-dark.png`. Run at the end of a piece of work: a render is where you see the problems no check can catch. |
 | `scripts/package_skill.py` | Builds `../drawio.skill`, the uploadable archive. Run it at the end of a phase so the package matches the commit. |
 | `scripts/list_icons.py` | Browse the icon catalog (`--search redis`), or refresh it against a newer draw.io (`--verify`, `--refresh`). Only the refresh modes need draw.io installed. |
-| `references/icons.md` | The icon catalog: ~130 curated vendor icons as `family:name` keys, with brand colours. Read it to pick an icon. |
+| `references/icons.md` | The icon catalog: 128 curated vendor icons with brand colours. Read it to pick an icon. |
 | `assets/icon_names.txt.gz` | Every icon name draw.io ships (~11,500), used by `UNKNOWN_ICON` to tell a typo from a real name. Generated; do not hand-edit. |
 | `assets/build_template.py` | Minimal starter generator. Copy, rename, customise. Vendors the helpers (`container`, `box`, `edge`, `sub`, `desc`, `icon_box`, `icon_node`, `svg_icon`) inline. |
 | `examples/build_three_tier_web.py` | Comprehensive worked example: three-tier web app, 11 solid boxes, 11 edges, every locked convention exercised. Validates clean. |
@@ -139,12 +139,19 @@ can route edges sideways.
 
 ### Choosing an icon
 
-Names live in `references/icons.md` as `family:name` — `aws:lambda`,
-`azure:compute/Function_Apps.svg`, `gcp:bigquery`, `k8s:pod`, `cisco:l3_switch`.
-`python scripts/list_icons.py --search redis` finds one. The catalog is ~130
-curated entries, but **any** of draw.io's ~11,500 names works — it is a
-shortlist, not a whitelist. For a name outside the curated families, use the
-escape hatch:
+The helpers take `family:name` — `aws:lambda`, `azure:compute/Function_Apps.svg`,
+`gcp:bigquery`, `k8s:pod`, `cisco:l3_switch`. Six families are known: `aws`,
+`azure`, `gcp`, `k8s`, `cisco`, `net`.
+
+`python scripts/list_icons.py --search redis` finds an entry, but **it prints the
+catalog's row key, not the argument.** The catalog spells the same icon with a
+hyphen (`aws-lambda`); the helpers need a colon (`aws:lambda`). Swap the first
+hyphen for a colon before pasting. Passing the hyphen form raises
+`KeyError` — the two spellings are tracked as KI-01.
+
+The catalog holds 128 curated entries, but **any** of draw.io's ~11,500 names
+works — it is a shortlist, not a whitelist. For a name outside the curated
+families, use the escape hatch:
 
 ```python
 icon_box(..., icon=raw_icon(shape="mxgraph.veeam.vbr"))
@@ -281,22 +288,18 @@ To package the skill as a `.skill` file (a zip with a `.skill` extension) for up
 python scripts/package_skill.py     # writes ../drawio.skill
 ```
 
-It roots the archive at `drawio/` and drops every hidden entry (`.git`,
-`.venv`, `.gitignore`, tool caches) plus `renders/`. The manual alternatives:
+It roots the archive at `drawio/`, so the result contains `drawio/SKILL.md`,
+`drawio/scripts/...` and so on — never nested under a wrapper folder. It drops
+every hidden entry (`.git`, `.venv`, `.gitignore`, tool caches) by rule rather
+than by name, plus `renders/` and `docs/`.
 
-- Zip the folder from its parent directory (works anywhere):
+**Do not build the zip by hand.** The exclusion list is the part that goes
+wrong: hand-built archives have shipped `.gitignore` and tool caches.
 
-  ```bash
-  cd <parent-of-drawio>
-  zip -r drawio.skill drawio -x '*/__pycache__/*' '*/.pytest_cache/*' \
-      '*/.ruff_cache/*' '*/.git/*' '*/.venv/*' '*/renders/*'
-  ```
-
-- Or, if the `skill-creator` skill is installed, run its `package_skill.py`
-  (validates frontmatter first). Its exact path depends on where skill-creator
-  is installed in your environment.
-
-Either way the archive must contain `drawio/SKILL.md`, `drawio/scripts/...`, etc. at its root (not nested under a wrapper folder). The exact upload path inside the Claude UI changes occasionally — check the current docs at https://docs.claude.com/en/docs/build-with-claude/skills for the latest. See `CONTRIBUTING.md` for the full packaging and install loop.
+Bump the `version:` field in this file's frontmatter before packaging — the
+Skills UI reads the displayed version from there, not from the archive filename.
+The exact upload path inside the Claude UI changes occasionally; check
+https://docs.claude.com/en/docs/build-with-claude/skills for the current one.
 
 For local-only use with Claude Code, drop the unpacked skill folder into `~/.claude/skills/drawio/`. Restart Claude Code to pick it up.
 
@@ -304,7 +307,7 @@ For local-only use with Claude Code, drop the unpacked skill folder into `~/.cla
 
 ```bash
 cd drawio
-python -m pytest        # runs all 88 tests
+python -m pytest        # runs all 94 tests
 ```
 
 `tests/test_render_png.py` covers `render_png.py`'s argument contract (`-o` / `--output`, and every invocation it rejects), faking `subprocess.run` at the system boundary so it runs without the draw.io CLI installed. `tests/test_validate.py` covers each validator check independently (a clean fixture plus one fixture per failure mode), the exemption guards (stub-squaring, point-anchored edges, and entering a container from above — each of which must NOT fire), a narrow-exemption guard (a segment running *along* a title band still fires even when both endpoints are inside the container), label-normalisation cases, plus a regression test that runs `examples/build_three_tier_web.py` end-to-end and asserts a clean validation. If you change `scripts/validate.py` or `scripts/render_png.py`, run the tests before committing.
