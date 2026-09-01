@@ -12,6 +12,25 @@ entry in sync with it before packaging. See
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-01 — External review intake
+
+### Fixed
+
+- **`docs/ARCHITECTURE.md` no longer claims `render_png.py` reuses the
+  validator's geometry.** It does not import `validate.py` at all — it hands the
+  file to the draw.io CLI, which parses it itself. Only `preview.py` shares the
+  validator's geometry. The module diagram carried the same false edge and has
+  been regenerated without it.
+- **`docs/ARCHITECTURE.md` no longer requires the draw.io CLI on `PATH` for
+  `list_icons.py --refresh`.** That path reads `app.asar` out of the app bundle
+  directly (or `$DRAWIO_APP`) and never looks at `PATH`.
+- Catalog size in the module diagram: `~130` → 128, matching the other docs.
+- **Release 1.3.0 is tagged.** It shipped on 2026-08-31 without one, leaving
+  `git describe` and every "what changed since 1.3.0" diff with no anchor. The
+  tag was backfilled at `796f084` — the release's last commit, where the
+  `SKILL.md` frontmatter and the CHANGELOG's top entry both read 1.3.0. Settles
+  UNK-01.
+
 ## [1.4.0] - 2026-09-01 — Documentation standards and packaging
 
 ### Added
@@ -335,11 +354,11 @@ Capabilities at 1.0.0:
 
 ## Reference
 
-- [Unreleased](https://github.com/rahulragunathan/drawio/compare/v1.4.0...HEAD)
-- [1.4.0](https://github.com/rahulragunathan/drawio/releases/tag/v1.4.0)
+- [Unreleased](https://github.com/rahulragunathan/drawio/compare/v1.4.1...HEAD)
+- [1.4.1](https://github.com/rahulragunathan/drawio/compare/v1.4.0...v1.4.1)
+- [1.4.0](https://github.com/rahulragunathan/drawio/compare/v1.3.0...v1.4.0)
+- [1.3.0](https://github.com/rahulragunathan/drawio/compare/v1.2.0...v1.3.0)
 - [1.2.0](https://github.com/rahulragunathan/drawio/releases/tag/v1.2.0)
 
-1.3.0 and everything before 1.2.0 were released without a tag, so those links
-are absent rather than broken, and 1.4.0 is linked to its tag rather than to a
-compare against a predecessor that has none — see UNK-01 in
-[docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).
+Releases before 1.2.0 were never tagged, so they have no compare link. 1.3.0's
+tag was backfilled after the fact — see the entry above.
