@@ -1,17 +1,22 @@
 # Icon catalog
 
-Curated vendor icons for the `drawio` skill. Pass a **key** from these tables to
-`icon_box()` or `icon_node()`; the helper turns it into the right style string.
+Curated vendor icons for the `drawio` skill. Find a key in these tables, then pass
+it to `icon_box()` or `icon_node()`; the helper turns it into the right style
+string.
+
+**Swap the first hyphen for a colon.** The tables key rows as `aws-lambda`; the
+helpers take `aws:lambda`. Passing the table form raises `KeyError`. The two
+spellings are tracked as KI-01 in [../docs/KNOWN_ISSUES.md](../docs/KNOWN_ISSUES.md).
 
 ```python
-icon_box(40, 80, 220, 60, "Order Handler", fill=..., icon="aws-lambda")
-icon_node(40, 80, "Order Handler", icon="aws-lambda")
+icon_box(40, 80, 220, 60, "Order Handler", fill=..., icon="aws:lambda")
+icon_node(40, 80, "Order Handler", icon="aws:lambda")
 ```
 
 Every name here is verified against draw.io Desktop 31.1.8. `scripts/list_icons.py
 --verify` re-checks them against your local install; `--search <term>` finds a key.
 
-**Not every logo is here.** These are the ~130 most-used services. draw.io ships
+**Not every logo is here.** These are the 128 most-used services. draw.io ships
 about 11,500 names in total — `--dump-names --family aws` lists them all, and any
 of them works. For a logo draw.io has no stencil for (Snowflake, Databricks, a
 client's brand mark), use `svg_icon("path/to/logo.svg")` instead.

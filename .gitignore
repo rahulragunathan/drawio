@@ -4,7 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# Local dev environment (see CONTRIBUTING.md)
+# Local dev environment (see docs/CONTRIBUTING.md)
 # No trailing slash: .venv is a symlink to ~/Python-Envs/<name>, not a
 # directory, and a "dir/" pattern would not match it.
 .venv
@@ -16,6 +16,11 @@ __pycache__/
 *.drawio
 *.png
 !examples/*.drawio
+
+# The architecture diagram is a committed doc asset: source, generator and
+# render all travel together so the picture can be checked against the code.
+!docs/*.drawio
+!docs/*.png
 
 # renders/ is the exception: regenerated at the end of each phase and
 # reviewed for sign-off, so the repo records what each phase actually looked

@@ -26,9 +26,10 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 # upload. Hidden entries (.git, .venv, .gitignore, .DS_Store, tool caches) are
 # excluded by rule rather than by name — see is_packaged().
 #
-# archive/ is prior-art feedback kept for maintainers: history, not part of
-# the skill a user installs. It shipped in packages up to 1.3.0.
-EXCLUDED_DIRS = {"renders", "__pycache__", "archive"}
+# docs/ is the maintainer's material: architecture, roadmap, the contributing
+# loop, and the architecture render. A user installing the skill reads
+# SKILL.md.
+EXCLUDED_DIRS = {"renders", "__pycache__", "docs"}
 
 
 def is_packaged(rel: Path) -> bool:

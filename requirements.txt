@@ -1,7 +1,7 @@
 # The drawio skill itself has no runtime dependencies.
 #
-# validate.py, render_png.py, list_icons.py, and the generator template are
-# deliberately stdlib-only so the skill stays a self-contained drop into
+# validate.py, render_png.py, list_icons.py, package_skill.py and the generator
+# template are deliberately stdlib-only so the skill stays a self-contained drop into
 # ~/.claude/skills/ (see SKILL.md, "Why no Python library?"). Keep it that way:
 # a new third-party import here would have to be installed everywhere the skill
 # is used, on every machine, before a diagram could be built.

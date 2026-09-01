@@ -7,9 +7,62 @@ locked conventions, helper signatures, or the validator CLI contract.
 
 The authoritative version is the `version:` field in `SKILL.md` frontmatter
 (the Customize → Skills UI reads it from there). Keep this changelog's top
-entry in sync with it before packaging. See `CONTRIBUTING.md` → Packaging.
+entry in sync with it before packaging. See
+[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) → Packaging.
 
-## 1.3.0 — 2026-08-31
+## [Unreleased]
+
+## [1.4.0] - 2026-09-01 — Documentation standards and packaging
+
+### Added
+
+- **`scripts/package_skill.py`** — builds `../drawio.skill` from the folder.
+  It roots the archive at `drawio/` and drops every hidden entry by rule rather
+  than by name, so `.gitignore` and tool caches stop leaking into uploads the
+  way they did from hand-built zips.
+- **`LICENSE`** — MIT, matching the `license:` field in `SKILL.md` frontmatter.
+- **`CLAUDE.md`** — the repo's own conventions, the validator invariants that
+  are easy to undo while simplifying, the three icon-extraction traps, and the
+  decisions already taken and not taken.
+- **`docs/ARCHITECTURE.md`**, with the module diagram the skill draws of itself.
+  Its generator, `.drawio` source and render are all committed, so the picture
+  can be checked against the code rather than trusted.
+- **`docs/ROADMAP.md`** and its supporting `KNOWN_ISSUES.md`,
+  `ENHANCEMENTS.md`, `OPEN_QUESTIONS.md`.
+
+### Changed
+
+- **`CONTRIBUTING.md` moved to `docs/`.** The repo root now holds only
+  `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `LICENSE` and the skill's own
+  `SKILL.md`. The design notes and settled conventions moved out of it and into
+  `CLAUDE.md`, where rationale belongs.
+- **`docs/` is excluded from the package.** It is maintainer material;
+  a user installing the skill reads `SKILL.md`.
+- **Release headings follow Keep a Changelog** (`## [x.y.z] - date — name`).
+  Only the headings changed; every released entry's text is untouched.
+
+### Fixed
+
+- **The icon catalog's own example no longer raises.** `references/icons.md`
+  opened with `icon="aws-lambda"`, which the helpers reject — they take
+  `aws:lambda`. The snippet and SKILL.md's "Choosing an icon" section now state
+  the two spellings and the swap between them. The underlying mismatch is
+  tracked as KI-01.
+- **Test count corrected** in `SKILL.md` and `docs/CONTRIBUTING.md`: 88 → 94.
+- **`render_png.py --theme` is documented** in SKILL.md's tool table.
+- **Catalog size stated exactly** (128 entries) instead of "~130".
+- Stale paths after the move: `.gitignore`, `README.md`, `SKILL.md` and the
+  CHANGELOG preamble all pointed at the old `CONTRIBUTING.md` location.
+
+### Removed
+
+- **`archive/`** — prior-art feedback kept for maintainers. Tracked outside the
+  repo; it is history, not part of the skill.
+- **Hand-zip packaging instructions** from `SKILL.md` and `docs/CONTRIBUTING.md`.
+  They contradicted the rule that the archive is never built by hand, which is
+  the failure they caused.
+
+## [1.3.0] - 2026-08-31 — Vendor logos and a ninth check
 
 Vendor logos, a ninth check, and the removal of dark-mode support.
 
@@ -97,7 +150,7 @@ failing on it.
 
 34 → 88.
 
-## 1.2.0 — 2026-08-01
+## [1.2.0] - 2026-08-01 — Validator fixes from first production use
 
 From an agent's first production use of the skill (a SupernoteExport
 architecture diagram: 3 dashed zones, 13 boxes, 14 edges). Additive — existing
@@ -180,7 +233,7 @@ now surface a new warning.
   at the system boundary so the real `render()` path runs without the drawio
   CLI installed. Suite is now 34 tests.
 
-## 1.1.1 — 2026-06-06
+## [1.1.1] - 2026-06-06 — Point-anchored edges and colour guidance
 
 Patch from examining the four final DocumentIQ diagrams in the spec folder.
 
@@ -210,7 +263,7 @@ Patch from examining the four final DocumentIQ diagrams in the spec folder.
 - Added `build_point_anchored` fixture + test (a fixed-`targetPoint` edge must
   not fire DANGLING). Suite is now 10 tests.
 
-## 1.1.0 — 2026-06-06
+## [1.1.0] - 2026-06-06 — Dark-mode helpers and layout guidance
 
 Additive release from lessons hand-refining the DocumentIQ diagrams in
 draw.io Desktop. All helper changes are backward-compatible (new optional
@@ -248,14 +301,14 @@ args); existing generators keep working unchanged.
   numbered pipelines); **"Edge styles beyond colour"** (jump / bidirectional
   / connector). Locked conventions now cover dark colours, verb-first
   theme-aware labels, and lean legends. Limitations note colour/semantic
-  blind spots and Desktop round-trip artifacts. `CONTRIBUTING.md` design
+  blind spots and Desktop round-trip artifacts. `docs/CONTRIBUTING.md` design
   notes updated.
 
-## 1.0.0 — 2026-06-06
+## [1.0.0] - 2026-06-06 — First stable release
 
 First stable release. (Versions 0.1.x–0.2.x were pre-stable iteration; the
 counter was reset here. The design rationale from those iterations is
-preserved in `SKILL.md` and `CONTRIBUTING.md` → Design notes, not in this
+preserved in `SKILL.md` and `CLAUDE.md`, not in this
 history.)
 
 Capabilities at 1.0.0:
@@ -279,3 +332,14 @@ Capabilities at 1.0.0:
 - **Tests** — nine pytest cases: a clean fixture, one per failure mode, a
   stub-squaring regression guard, and an end-to-end build+validate of the
   bundled example.
+
+## Reference
+
+- [Unreleased](https://github.com/rahulragunathan/drawio/compare/v1.4.0...HEAD)
+- [1.4.0](https://github.com/rahulragunathan/drawio/releases/tag/v1.4.0)
+- [1.2.0](https://github.com/rahulragunathan/drawio/releases/tag/v1.2.0)
+
+1.3.0 and everything before 1.2.0 were released without a tag, so those links
+are absent rather than broken, and 1.4.0 is linked to its tag rather than to a
+compare against a predecessor that has none — see UNK-01 in
+[docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).

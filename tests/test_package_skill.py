@@ -64,9 +64,9 @@ def test_the_skill_itself_is_complete(tmp_path):
         assert required in names, required
 
 
-def test_the_feedback_archive_is_not_packaged(tmp_path):
-    # archive/ is prior-art feedback kept for maintainers. It is history, not
-    # part of the skill a user installs.
+def test_maintainer_docs_are_not_packaged(tmp_path):
+    # docs/ is the maintainer's material — architecture, roadmap, the
+    # contributing loop. A user installing the skill reads SKILL.md.
     _out, names = _build(tmp_path)
 
-    assert not any(n.startswith("drawio/archive/") for n in names)
+    assert not any(n.startswith("drawio/docs/") for n in names)
