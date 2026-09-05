@@ -26,7 +26,6 @@ render as a coloured tile with a white glyph, so they read on either canvas.
 GCP and Cisco are monochrome and take whatever `fill` you pass. Azure icons are
 fixed-colour SVG files and cannot be recoloured at all.
 
-
 ## AWS — `aws-*` (51)
 
 Rendered through the `resourceIcon` tile wrapper. The `fill` is AWS's own category colour — orange for compute, green for storage, blue-violet for networking and analytics, red for security.
@@ -196,4 +195,3 @@ Generic network shapes. Use these when the diagram is vendor-neutral.
 | Storage | `net-storage` | `storage` | — |
 | Switch | `net-switch` | `switch` | — |
 | User | `net-user` | `users` | — |
-

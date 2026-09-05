@@ -10,7 +10,7 @@ restated here.
 ## Where things are written down
 
 | Question | File |
-|----------|------|
+| ---------- | ------ |
 | How do I use the skill? | [SKILL.md](SKILL.md) |
 | What is this repo, in 30 seconds? | [README.md](README.md) |
 | How is the code put together? | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |

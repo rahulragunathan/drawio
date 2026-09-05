@@ -10,7 +10,7 @@ the record lives in [CHANGELOG.md](../CHANGELOG.md). IDs are never reused.
 ## Severity
 
 | Level | Means |
-|-------|-------|
+| ------- | ------- |
 | **Critical** | Loses or corrupts data, or sends wrong information to real recipients. |
 | **High** | Silently produces a wrong result, or reports success without doing the work. |
 | **Medium** | Wrong under conditions the operator can notice or work around. |
@@ -19,6 +19,7 @@ the record lives in [CHANGELOG.md](../CHANGELOG.md). IDs are never reused.
 ---
 
 <a id="ki-02"></a>
+
 ## KI-02 — A compressed .drawio validates as clean no matter what it contains
 
 **Severity:** High
@@ -49,7 +50,7 @@ result looks.
 Reproduced against the repo at 1.4.0, using the suite's own `build_crossing`
 fixture:
 
-```
+```text
 UNCOMPRESSED -> exit 1 | ✗ CROSSING: edge '' (A → C) segment (180.0, 225.0)→(500.0, 225.0) …
 COMPRESSED   -> exit 0 | ✓ no violations
 ```
@@ -79,6 +80,7 @@ than in any check, and both want the same new fixture family.
 ---
 
 <a id="ki-03"></a>
+
 ## KI-03 — Multi-page diagrams are merged into one canvas by non-unique cell IDs
 
 **Severity:** High
@@ -132,6 +134,7 @@ Bundle with [KI-02](#ki-02).
 ---
 
 <a id="ki-04"></a>
+
 ## KI-04 — Stub squaring accepts a stub that leaves the anchor in the wrong direction
 
 **Severity:** High
@@ -191,6 +194,7 @@ plus the existing diagonal-stub guard that must not.
 ---
 
 <a id="ki-05"></a>
+
 ## KI-05 — A label in a separate edgeLabel cell escapes every label check
 
 **Severity:** High
@@ -244,6 +248,7 @@ label's text and position out of the shapes draw.io actually writes.
 ---
 
 <a id="ki-01"></a>
+
 ## KI-01 — The icon catalog publishes keys the generator helpers reject
 
 **Severity:** Medium
@@ -328,6 +333,7 @@ today and would have caught this on the commit that introduced the catalog.
 ---
 
 <a id="ki-06"></a>
+
 ## KI-06 — Labels on `<object>` wrappers are lost
 
 **Severity:** Medium
@@ -370,6 +376,7 @@ and a wrapped box.
 ---
 
 <a id="ki-07"></a>
+
 ## KI-07 — The title-band exemption applies to every vertical segment of the edge
 
 **Severity:** Medium
@@ -416,6 +423,7 @@ entry stub and one a fly-over, and assert exactly one violation.
 ---
 
 <a id="ki-08"></a>
+
 ## KI-08 — A label's position ignores the path-relative geometry draw.io stores
 
 **Severity:** Medium
@@ -464,6 +472,7 @@ Bundle with [KI-05](#ki-05) and [KI-06](#ki-06).
 ---
 
 <a id="ki-09"></a>
+
 ## KI-09 — Icon name matching is case-insensitive for image paths, which are not
 
 **Severity:** Low
@@ -503,6 +512,7 @@ per kind.
 ---
 
 <a id="ki-10"></a>
+
 ## KI-10 — Only four exact HTML break spellings are treated as line breaks
 
 **Severity:** Low

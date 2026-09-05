@@ -41,7 +41,7 @@ parses a `.drawio` file into `Box` and `Edge` records, reconstructs each edge's
 rendered polyline, and runs nine checks:
 
 | Severity | Checks |
-|----------|--------|
+| --- | --- |
 | Error — fails the build | `CROSSING`, `OVERLAP`, `TEXT_OVERLAP`, `LABEL_OVERLAP`, `DANGLING` |
 | Warning — prints only | `LABEL_BOX_OVERLAP`, `SHORT_LABELLED_EDGE`, `DIAGONAL`, `UNKNOWN_ICON` |
 
@@ -107,7 +107,7 @@ archive.
 ## What runs where
 
 | Piece | Needs |
-|-------|-------|
+| ------- | ------- |
 | A generator, `validate.py`, `list_icons.py --search`, `package_skill.py` | Python 3.10+, stdlib only |
 | `preview.py` | matplotlib |
 | `render_png.py`, `render_examples.py` | draw.io Desktop CLI on `PATH`, or the macOS app bundle at `/Applications/draw.io.app` |

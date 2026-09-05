@@ -15,7 +15,7 @@ nothing. IDs are never reused.
 ## Kind
 
 | Kind | Means |
-|------|-------|
+| ------ | ------- |
 | **Decision** | The code does something defensible, but nobody has chosen whether it is right. Asks for an answer. |
 | **Verification** | The behavior is probably correct and nothing proves it. Asks for a test, or a deliberate acceptance. |
 | **Risk** | Known, understood, accepted for now. Asks for nothing until circumstances change. |
