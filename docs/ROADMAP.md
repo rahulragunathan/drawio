@@ -4,7 +4,7 @@
 not describe what shipped or how the code works today.
 
 | Looking for | Read |
-|-------------|------|
+| ------------- | ------ |
 | Detail on an open bug | [KNOWN_ISSUES.md](KNOWN_ISSUES.md) |
 | Detail on a candidate enhancement | [ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | Detail on an open question | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) |
@@ -39,7 +39,7 @@ and then the three label-reading ones.
 Most severe first. Severity definitions and full detail in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 | ID | Issue | Severity |
-|----|-------|----------|
+| ---- | ------- | ---------- |
 | [KI-02](KNOWN_ISSUES.md#ki-02) | A compressed .drawio validates as clean no matter what it contains | High |
 | [KI-03](KNOWN_ISSUES.md#ki-03) | Multi-page diagrams are merged into one canvas by non-unique cell IDs | High |
 | [KI-04](KNOWN_ISSUES.md#ki-04) | Stub squaring accepts a stub that leaves the anchor in the wrong direction | High |
@@ -56,7 +56,7 @@ Most severe first. Severity definitions and full detail in [KNOWN_ISSUES.md](KNO
 Highest priority first. Priority definitions and full detail in [ENHANCEMENTS.md](ENHANCEMENTS.md).
 
 | ID | Enhancement | Priority | Effort |
-|----|-------------|----------|--------|
+| ---- | ------------- | ---------- | -------- |
 | [ENH-01](ENHANCEMENTS.md#enh-01) | One verify gate that runs lint, tests, and a live example build | Medium | ~2 hours |
 | [ENH-03](ENHANCEMENTS.md#enh-03) | Mark a container explicitly instead of inferring it from its style | Medium | ~3 hours |
 | [ENH-04](ENHANCEMENTS.md#enh-04) | Refuse to package a file that resolves outside the skill root | Medium | ~1 hour |

@@ -38,7 +38,7 @@ This skill encodes those decisions explicitly. You write the coordinates; the va
 1. **Copy the template.** `cp assets/build_template.py my-diagram.py`. Edit constants, containers, boxes, then edges.
 2. **Build.** `python my-diagram.py`. For a vendor logo, find its key first: `python scripts/list_icons.py --search lambda`. The script writes a `.drawio` file (default: cwd).
 3. **Validate.** `python scripts/validate.py my-diagram.drawio`. Fix violations (see the failure-mode table below).
-4. **Open.** Drop the file at https://app.diagrams.net (no auth) or open it in draw.io Desktop. The diagram round-trips without diff churn — if you edit in Desktop and save, your generator can read the result back.
+4. **Open.** Drop the file at <https://app.diagrams.net> (no auth) or open it in draw.io Desktop. The diagram round-trips without diff churn — if you edit in Desktop and save, your generator can read the result back.
 5. **(Optional) Preview inline.** `python scripts/preview.py my-diagram.drawio` renders an approximate PNG with only matplotlib (which is *not* a dependency of the rest of the skill — in a project venv you'll often find `render_png.py` is the available path) — handy when the draw.io CLI isn't available (sandboxes, VMs). It draws the exact geometry the validator checks, so it's reliable for judging routing, lane spacing, and label placement. **It does not wrap box text the way draw.io does** — long box descriptions will overflow in the preview but wrap correctly in real draw.io, so don't trim box text based on a preview overflow alone.
 6. **Render the PNG and look at it.** `python scripts/render_png.py my-diagram.drawio` writes `my-diagram.png` (pixel-accurate; needs the draw.io Desktop CLI on PATH). Add `-o docs/architecture.png` when the rendered PNG is committed somewhere other than beside its source — it creates missing parent directories, and takes exactly one input. Treat this as part of the loop, not an optional extra — a clean validate says nothing about whether labels have *room*, whether column gaps are cramped, or whether either theme is legible. Looking at the render is what catches those.
 
@@ -299,7 +299,7 @@ wrong: hand-built archives have shipped `.gitignore` and tool caches.
 Bump the `version:` field in this file's frontmatter before packaging — the
 Skills UI reads the displayed version from there, not from the archive filename.
 The exact upload path inside the Claude UI changes occasionally; check
-https://docs.claude.com/en/docs/build-with-claude/skills for the current one.
+<https://docs.claude.com/en/docs/build-with-claude/skills> for the current one.
 
 For local-only use with Claude Code, drop the unpacked skill folder into `~/.claude/skills/drawio/`. Restart Claude Code to pick it up.
 

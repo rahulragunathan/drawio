@@ -13,7 +13,7 @@ The full reference is in `SKILL.md`. This README is a 30-second tour.
 
 ## Layout
 
-```
+```text
 drawio/
 ├── SKILL.md                          ← Read this first
 ├── README.md                         ← This file

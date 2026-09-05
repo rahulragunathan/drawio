@@ -13,7 +13,7 @@ moves to "Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md). IDs are n
 Priority is about value, not urgency. Effort is a rough estimate — a session, or days.
 
 | Level | Means |
-|-------|-------|
+| ------- | ------- |
 | **High** | Closes a gap hit during real use. |
 | **Medium** | Worth doing when the area is already open. Removes a sharp edge or a duplication. |
 | **Low** | Tidying. Do it while passing through. |
@@ -21,6 +21,7 @@ Priority is about value, not urgency. Effort is a rough estimate — a session, 
 ---
 
 <a id="enh-01"></a>
+
 ## ENH-01 — One verify gate that runs lint, tests, and a live example build
 
 **Priority:** Medium · **Effort:** ~2 hours
@@ -62,6 +63,7 @@ match the rest of the project's commands.
 ---
 
 <a id="enh-03"></a>
+
 ## ENH-03 — Mark a container explicitly instead of inferring it from its style
 
 **Priority:** Medium · **Effort:** ~3 hours
@@ -109,6 +111,7 @@ marker (still a container) and one carrying `drawioSkillRole=box` (not a contain
 ---
 
 <a id="enh-04"></a>
+
 ## ENH-04 — Refuse to package a file that resolves outside the skill root
 
 **Priority:** Medium · **Effort:** ~1 hour
@@ -153,6 +156,7 @@ the top of the function already, so compare against the resolved root.
 ---
 
 <a id="enh-02"></a>
+
 ## ENH-02 — Catch a stale architecture render before it is reviewed
 
 **Priority:** Low · **Effort:** ~1 hour
@@ -185,6 +189,7 @@ text — the generator is deterministic, and `minidom.toprettyxml` output is sta
 ---
 
 <a id="enh-05"></a>
+
 ## ENH-05 — Sanity-check an icon-name refresh before it overwrites the catalog
 
 **Priority:** Low · **Effort:** ~1 hour
@@ -229,6 +234,7 @@ silent truncation into a clear error naming the offending entry.
 ---
 
 <a id="enh-06"></a>
+
 ## ENH-06 — Root the archive at the skill's declared name, not the directory's
 
 **Priority:** Low · **Effort:** ~30 minutes
