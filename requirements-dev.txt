@@ -5,4 +5,11 @@ ruff>=0.16.6
 # preview.py only. The offline preview renderer is the one part of the skill
 # with a third-party dependency; SKILL.md calls this out, and render_png.py is
 # the fallback wherever matplotlib is unavailable.
-matplotlib>=3.8
+#
+# Split on an environment marker because matplotlib 3.11 requires Python
+# >=3.11, and this skill supports 3.10 (docs/ARCHITECTURE.md, ruff.toml
+# target-version). A single `matplotlib>=3.11.1` line has no candidate on
+# 3.10, and one unsatisfiable requirement fails the whole file — which would
+# cost a contributor on 3.10 pytest and ruff as well as the preview.
+matplotlib>=3.11.1; python_version >= "3.11"
+matplotlib>=3.8; python_version < "3.11"
