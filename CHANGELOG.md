@@ -12,6 +12,36 @@ entry in sync with it before packaging. See
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-10 — Line jumps on by default
+
+### Changed
+
+- **`edge()` draws line jumps by default.** `jump` now defaults to `"gap"`
+  instead of `False`, so where two edges cross, draw.io breaks the later one
+  and the pair reads as unconnected rather than joined. Nothing is drawn
+  unless edges actually cross: across the three generators in this repo the
+  new default produces six jumps (four in `three-tier-web`, two in
+  `docs/architecture`, none in `aws-vpc-pipeline`), three of which were
+  previously bare intersections.
+- **`jump` takes a style, not just a flag.** It accepts any of draw.io's five
+  `jumpStyle` values (`"none"`, `"gap"`, `"line"`, `"arc"`, `"sharp"`) and
+  raises `ValueError` on anything else — draw.io silently ignores an unknown
+  value, which is worse than failing here. `True` and `False` still work as
+  aliases for `"gap"` and `"none"`, so existing call sites are unaffected.
+- **`examples/build_three_tier_web.py` edge 6 uses `jump="line"`.** It is
+  dotted (`dashPattern=1 4`) *and* it is the edge draw.io hops, and a `"gap"`
+  is an absence of ink — the hop was invisible in the dot pattern. `"line"`
+  adds a perpendicular tick either side of the break, which survives it.
+  `SKILL.md` documents this as the rule for dashed and dotted edges.
+
+### Fixed
+
+- **`requirements-dev.txt` was uninstallable on Python 3.10.** Dependabot's
+  `matplotlib>=3.11.1` has no distribution for 3.10 (matplotlib 3.11 requires
+  `>=3.11`), and one unsatisfiable line fails the whole file — so a
+  contributor on the documented floor lost pytest and ruff too, not just the
+  optional preview. The constraint is now split on an environment marker.
+
 ## [1.4.2] - 2026-09-01 — Documentation standards refresh
 
 ### Fixed

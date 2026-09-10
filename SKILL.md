@@ -1,6 +1,6 @@
 ---
 name: drawio
-version: 1.4.2
+version: 1.5.0
 description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs a nine-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON). Diagrams can carry real vendor logos — AWS, Azure, GCP, Kubernetes, Cisco — from draw.io's own stencil library, or any logo you supply as an SVG. Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
 license: MIT
 ---
@@ -97,7 +97,10 @@ Content-and-composition lessons the validator can't check for you:
 
 The `edge()` helper supports a few options worth reaching for:
 
-- **`jump=True`** adds `jumpStyle=gap` — the little hop draw.io draws over a crossed line. Use it as the cheap fix when a perpendicular crossing is unavoidable (the validator already treats perpendicular edge–edge crossings as fine; the jump just makes them read better) instead of rerouting.
+- **`jump` — line jumps are on by default (`jump="gap"`).** Where two edges cross, draw.io breaks the line so the pair reads as unconnected rather than joined. The validator already treats perpendicular edge–edge crossings as fine; the jump just makes them read better than a bare intersection, and it beats rerouting as the fix for an unavoidable crossing. Nothing is drawn unless edges actually cross, so leaving it on costs nothing on a clean diagram.
+  - **draw.io hops only the edge drawn later**, so each crossing gets exactly one jump and the pair never double-hops. Emit edges in the order you want the hops to fall: the *later* edge is the one that breaks.
+  - **`jump="line"` on a dashed or dotted edge.** A `gap` is an absence of ink, so on `style="dashed"` it is hard to spot and on `style="dotted"` (`dashPattern=1 4`) it vanishes into the pattern entirely. `"line"` adds a perpendicular tick either side of the break, which survives both. Reach for it whenever the edge that hops is the dashed one — `examples/build_three_tier_web.py` edge 6 is the worked case.
+  - `jump=False` turns jumps off for one edge. `"arc"` (semicircular hop) and `"sharp"` (squared bump) are draw.io's other two values; both add more ink than `"gap"` and render raggedly on dashed lines, so prefer `"gap"` / `"line"`.
 - **`bidirectional=True`** puts arrowheads on both ends. Use it **sparingly** — arrows are one-way by default, and direction is part of how the diagram reads. Reserve it for the rare edge where flow genuinely goes both ways (read/write to a datastore, query/response, sync). Don't reach for it just because two components talk to each other.
 - **`end_arrow=False`** drops the end arrowhead — for connector / bus / merge lines where two sources join a single producer line and a directional arrow would mislead.
 

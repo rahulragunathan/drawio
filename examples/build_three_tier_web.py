@@ -20,8 +20,9 @@ Conventions exercised:
 - Description body via desc() — sentence case, non-bold, explicit
   font-size.
 - edge() options: a bidirectional Web<->DB Read/Write edge (edge 7 — the
-  exception; almost everything else is one-way), and a jump=gap hop where
-  the Read lane crosses the Gateway->Web arrow (edge 6).
+  exception; almost everything else is one-way), and a jump="line" hop where
+  the dotted Read lane crosses the Gateway->Web arrow (edge 6 — the default
+  "gap" would be swallowed by the dot pattern there).
 - Lean legend: only the future-state convention, which a reader can't infer.
 
 Run from the skill root:
@@ -173,6 +174,9 @@ def box(
     return cid
 
 
+JUMP_STYLES = ("none", "gap", "line", "arc", "sharp")
+
+
 def edge(
     src,
     dst,
@@ -187,7 +191,7 @@ def edge(
     entryY=None,
     label_x=None,
     label_y=None,
-    jump=False,
+    jump="gap",
     bidirectional=False,
     end_arrow=True,
     label_bg="#ffffff",
@@ -201,6 +205,14 @@ def edge(
         raise ValueError(
             "entryX and entryY must be given together — half a pair emits "
             "'entryY=None' into the style, which is not a coordinate"
+        )
+    if jump is True:
+        jump = "gap"
+    elif jump is False or jump is None:
+        jump = "none"
+    if jump not in JUMP_STYLES:
+        raise ValueError(
+            f"jump must be one of {sorted(JUMP_STYLES)}, True or False — got {jump!r}"
         )
     cid = cell_id()
     dash = ""
@@ -218,12 +230,13 @@ def edge(
     )
     strokeC = color
     end_str = "endArrow=classic;endFill=1;" if end_arrow else "endArrow=none;"
+    jump_str = "" if jump == "none" else f"jumpStyle={jump};"
     start_str = "startArrow=classic;startFill=1;" if bidirectional else ""
     style_str = (
         f"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=0;"
         f"jettySize=auto;html=1;{exit_str}{entry_str}"
         f"strokeColor={strokeC};strokeWidth={width};"
-        f"{dash}{'jumpStyle=gap;' if jump else ''}{start_str}{end_str}"
+        f"{dash}{jump_str}{start_str}{end_str}"
         f"startSize=2;endSize=2;fontSize=12;"
         f"fontColor={strokeC};labelBackgroundColor={label_bg};"
     )
@@ -555,9 +568,13 @@ edge(
 )
 
 # 6. Web -> Cache (source = green). Dotted = out-of-band lookup.
-#    Lane y=296, sub-channel x=896. jump=True: this lane crosses the
-#    API Gateway -> Web vertical (edge 5) at x~510; the gap hop reads
-#    cleaner than rerouting (perpendicular crossings are valid anyway).
+#    Lane y=296, sub-channel x=896. This lane crosses the API Gateway -> Web
+#    vertical (edge 5) at x~510, and because it is declared later it is the
+#    edge draw.io hops — perpendicular crossings are valid anyway, the hop
+#    just reads cleaner than rerouting.
+#    jump="line" rather than the default "gap": on a dotted line
+#    (dashPattern=1 4) a plain gap is indistinguishable from the pattern, so
+#    the hop is invisible. The tick marks survive it.
 edge(
     web,
     cache,
@@ -567,7 +584,7 @@ edge(
     entryY=0.5,
     color=COLOR_FRONTEND_GREEN,
     style="dotted",
-    jump=True,
+    jump="line",
     label="Read",
     label_bg="#f3f0ff",
     waypoints=[(500, 296), (896, 296), (896, 308)],

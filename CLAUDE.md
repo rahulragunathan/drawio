@@ -118,6 +118,22 @@ when touching `list_icons.py`.
   grey for any colour matplotlib cannot parse, so a pre-1.3.0 diagram previews
   in grey rather than failing. Render the PNG for a faithful picture of an
   older file.
+- **Line jumps default to `"gap"`, not `"line"`.** Both were measured against
+  draw.io's own painter (`mxShape.prototype.paintLine` in `Graph.js`) at the
+  real `jumpSize=6` / `strokeWidth=2` the helpers emit. `gap` removes ink
+  rather than adding it, so it stays quiet as crossings accumulate, and it is
+  what `jump=True` already emitted — the default costs no churn. Its one
+  failure is dashed and dotted edges, where a break is indistinguishable from
+  the pattern; `"line"` adds a perpendicular tick either side and survives it,
+  so that is the documented per-edge override, not the global default. Of the
+  six crossings across this repo's three generators, five hop on a solid edge.
+  `"arc"` and `"sharp"` add still more ink and render raggedly through a dash
+  pattern.
+- **Only the later-drawn edge hops.** draw.io tests each edge against the ones
+  already validated (`updateLineJumps` walks `this.validEdges`), so a crossing
+  gets exactly one jump and turning jumps on globally cannot double-hop a
+  pair. This is also why the *emission order* of edges decides which one
+  breaks.
 - **`renders/` is committed, and excluded from the package.** For a diagramming
   skill the pictures are the product, so the repo records what each phase looked
   like and a geometry change shows a changed picture. Users installing the skill

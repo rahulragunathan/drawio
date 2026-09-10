@@ -193,6 +193,9 @@ def box(
     return cid
 
 
+JUMP_STYLES = ("none", "gap", "line", "arc", "sharp")
+
+
 def edge(
     src,
     dst,
@@ -207,15 +210,20 @@ def edge(
     entryY=None,
     label_x=None,
     label_y=None,
-    jump=False,
+    jump="gap",
     bidirectional=False,
     end_arrow=True,
     label_bg="#ffffff",
 ):
     """Orthogonal edge with optional waypoints and label offset.
 
-    jump=True         — add jumpStyle=gap so this edge hops crossed lines
-                        instead of being rerouted (cheap crossing fix).
+    jump              — line-jump style where this edge crosses another,
+                        default "gap": draw.io breaks the line at the crossing
+                        so the two read as unconnected. Pass "line" on a
+                        dashed or dotted edge — a plain gap vanishes into the
+                        dash pattern, the tick marks do not. False turns jumps
+                        off; True is an alias for "gap". draw.io hops only the
+                        edge drawn later, so a crossing gets exactly one jump.
     bidirectional=True— arrowheads on both ends (request/response, R/W).
     end_arrow=False   — no end arrowhead (connector / bus / merge line).
     Prefer verb-first labels ('Call OCR', 'Reads index') and stacked <div>
@@ -234,6 +242,14 @@ def edge(
             "entryX and entryY must be given together — half a pair emits "
             "'entryY=None' into the style, which is not a coordinate"
         )
+    if jump is True:
+        jump = "gap"
+    elif jump is False or jump is None:
+        jump = "none"
+    if jump not in JUMP_STYLES:
+        raise ValueError(
+            f"jump must be one of {sorted(JUMP_STYLES)}, True or False — got {jump!r}"
+        )
     cid = cell_id()
     dash = ""
     if style == "dashed":
@@ -250,12 +266,13 @@ def edge(
     )
     strokeC = color
     end_str = "endArrow=classic;endFill=1;" if end_arrow else "endArrow=none;"
+    jump_str = "" if jump == "none" else f"jumpStyle={jump};"
     start_str = "startArrow=classic;startFill=1;" if bidirectional else ""
     style_str = (
         f"edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=0;"
         f"jettySize=auto;html=1;{exit_str}{entry_str}"
         f"strokeColor={strokeC};strokeWidth={width};"
-        f"{dash}{'jumpStyle=gap;' if jump else ''}{start_str}{end_str}"
+        f"{dash}{jump_str}{start_str}{end_str}"
         f"startSize=2;endSize=2;fontSize=12;"
         f"fontColor={strokeC};labelBackgroundColor={label_bg};"
     )
