@@ -5,4 +5,4 @@ ruff>=0.16.6
 # preview.py only. The offline preview renderer is the one part of the skill
 # with a third-party dependency; SKILL.md calls this out, and render_png.py is
 # the fallback wherever matplotlib is unavailable.
-matplotlib>=3.8
+matplotlib>=3.11.2
