@@ -1,5 +1,5 @@
 # Development and authoring tooling. Not needed to build or validate a diagram.
-pytest>=9.1.1
+pytest>=9.2.0
 ruff>=0.16.6
 
 # preview.py only. The offline preview renderer is the one part of the skill
