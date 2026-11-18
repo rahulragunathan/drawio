@@ -101,7 +101,7 @@ rule rather than by name, plus `renders/`, `docs/` and `__pycache__`. What
 remains is what a user installs.
 
 `renders/` is committed and reviewed at the end of a phase.
-[CLAUDE.md](../CLAUDE.md) records why it is kept in the repo and out of the
+[AGENTS.md](../AGENTS.md) records why it is kept in the repo and out of the
 archive.
 
 ## What runs where

@@ -17,7 +17,7 @@ The full reference is in `SKILL.md`. This README is a 30-second tour.
 drawio/
 ├── SKILL.md                          ← Read this first
 ├── README.md                         ← This file
-├── CLAUDE.md                         ← Repo conventions and settled decisions
+├── AGENTS.md                         ← Repo conventions and settled decisions
 ├── CHANGELOG.md                      ← Version history
 ├── LICENSE                           ← MIT
 ├── pytest.ini · ruff.toml · requirements*.txt

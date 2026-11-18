@@ -12,6 +12,13 @@ entry in sync with it before packaging. See
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-11-18
+
+### Changed
+
+- The repo's working notes move from `CLAUDE.md` to `AGENTS.md`, which Claude Code, Codex and
+  Antigravity all read. Every doc that pointed at `CLAUDE.md` now points at `AGENTS.md`.
+
 ## [1.4.2] - 2026-09-01 — Documentation standards refresh
 
 ### Fixed

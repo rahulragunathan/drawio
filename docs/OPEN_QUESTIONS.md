@@ -9,7 +9,7 @@ behavior with a known fix is a bug — move it to [KNOWN_ISSUES.md](KNOWN_ISSUES
 
 Each entry has a stable ID. When one is settled it leaves this file: into the code plus a
 CHANGELOG entry if it changed anything, into KNOWN_ISSUES or ENHANCEMENTS if it became work,
-or into "Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md) if the answer was to do
+or into "Decisions taken and not taken" in [AGENTS.md](../AGENTS.md) if the answer was to do
 nothing. IDs are never reused.
 
 ## Kind

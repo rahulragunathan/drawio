@@ -4,7 +4,8 @@ This repo is one Claude skill: a generator template plus a geometric validator
 for `.drawio` architecture diagrams. `SKILL.md` is the model-facing reference
 and the product. Everything else supports it.
 
-Global shell, git, and process rules live in `~/.claude/CLAUDE.md`. They are not
+Global shell, git, and process rules are the global standards that each agent installs from
+`dev-setup/standards/` (for Claude Code, `~/.claude/CLAUDE.md`). They are not
 restated here.
 
 ## Where things are written down

@@ -64,7 +64,7 @@ passes review without being looked at.
 Detect and decode before parsing: when a `<diagram>` element has no `mxCell`
 child but non-empty text, treat the text as base64 → `zlib.decompress(data,
 -15)` → `urllib.parse.unquote` → parse that as XML. All three steps are stdlib,
-so the constraint in [CLAUDE.md](../CLAUDE.md) holds.
+so the constraint in [AGENTS.md](../AGENTS.md) holds.
 
 Decide deliberately whether an undecodable `<diagram>` is an error or a warning.
 Failing loudly is the safer default here — the whole defect is that "nothing
@@ -394,7 +394,7 @@ segment being tested. Once either endpoint sits anywhere inside a container,
 *every* vertical segment of that edge is exempted from `TEXT_OVERLAP` against
 that container — not just the entry stub that reaches the endpoint.
 
-The documented intent, in [CLAUDE.md](../CLAUDE.md), is narrower: "the exemption
+The documented intent, in [AGENTS.md](../AGENTS.md), is narrower: "the exemption
 needs a *vertical* segment and an endpoint geometrically inside the container."
 The horizontal half is genuinely narrow and `build_text_overlap_inside` guards
 it. The vertical half is wider than it reads.
