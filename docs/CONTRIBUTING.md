@@ -3,7 +3,7 @@
 The maintainer loop for the `drawio` skill — how to refine it and get the
 changes back into Claude. It is not user-facing; [SKILL.md](../SKILL.md) is the
 reference for *using* the skill, [ARCHITECTURE.md](ARCHITECTURE.md) explains how
-the code fits together, and [CLAUDE.md](../CLAUDE.md) holds the invariants and
+the code fits together, and [AGENTS.md](../AGENTS.md) holds the invariants and
 the decisions already settled.
 
 ## Two separate things: refining vs. installing
@@ -157,7 +157,7 @@ generated file is written with `mtime=0`, so an unchanged refresh leaves it
 byte-identical instead of writing a fresh binary blob.
 
 The three extraction traps that produce a plausible-but-wrong result are in
-[CLAUDE.md](../CLAUDE.md) — read them before touching the extractor.
+[AGENTS.md](../AGENTS.md) — read them before touching the extractor.
 
 ## Git
 

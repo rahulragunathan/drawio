@@ -9,8 +9,8 @@ not describe what shipped or how the code works today.
 | Detail on a candidate enhancement | [ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | Detail on an open question | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) |
 | What already shipped | [CHANGELOG.md](../CHANGELOG.md) |
-| How the code works now | [README.md](../README.md), [ARCHITECTURE.md](ARCHITECTURE.md), [CLAUDE.md](../CLAUDE.md) |
-| Ideas considered and dropped | "Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md) |
+| How the code works now | [README.md](../README.md), [ARCHITECTURE.md](ARCHITECTURE.md), [AGENTS.md](../AGENTS.md) |
+| Ideas considered and dropped | "Decisions taken and not taken" in [AGENTS.md](../AGENTS.md) |
 
 The tables below are **pointers, not summaries** — ID, title, rating, link. Nothing is
 described twice.

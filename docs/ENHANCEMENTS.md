@@ -6,7 +6,7 @@ this file carries enough detail to pick an item up without digging.
 Each entry has a stable ID — use it in branch names (`feature/enh-01-<slug>`) and in the
 CHANGELOG entry that closes it. When an item ships, delete it from here and from the ROADMAP
 index; the record lives in [CHANGELOG.md](../CHANGELOG.md). An item dropped rather than built
-moves to "Decisions taken and not taken" in [CLAUDE.md](../CLAUDE.md). IDs are never reused.
+moves to "Decisions taken and not taken" in [AGENTS.md](../AGENTS.md). IDs are never reused.
 
 ## Priority
 
@@ -101,7 +101,7 @@ Keep the inference as the fallback — hand-authored and Desktop-round-tripped f
 marker, and dropping it would reclassify every existing diagram. The marker only has to win
 where present.
 
-[CLAUDE.md](../CLAUDE.md) records that container detection deliberately does **not** require
+[AGENTS.md](../AGENTS.md) records that container detection deliberately does **not** require
 a particular `strokeWidth`; that decision stands and is not what this changes. Update that
 note when the marker lands, and add a fixture for a dashed top-aligned shape carrying no
 marker (still a container) and one carrying `drawioSkillRole=box` (not a container).
@@ -218,7 +218,7 @@ like a catalog problem rather than a bad refresh.
 
 The input is a local, trusted app bundle (or `$DRAWIO_APP`), so this is about corruption
 rather than attack. The offset arithmetic itself is correct and must stay as it is;
-[CLAUDE.md](../CLAUDE.md) records why `8 + field1` is the right formula.
+[AGENTS.md](../AGENTS.md) records why `8 + field1` is the right formula.
 
 ### Notes for the work
 
