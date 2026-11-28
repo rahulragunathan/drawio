@@ -1,0 +1,11 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "drawio",
+  "description": "Architecture diagrams as draw.io XML with deterministic routing, a nine-check geometric validator, and real vendor icons (create-diagram).",
+  "version": "2.0.0",
+  "author": {
+    "name": "Rahul Ragunathan"
+  },
+  "license": "MIT",
+  "keywords": ["drawio", "diagrams", "architecture-diagram"]
+}

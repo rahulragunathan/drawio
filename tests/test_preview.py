@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 
 
-SKILL_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent
+SKILL_ROOT = REPO_ROOT / "skills" / "create-diagram"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 pytest.importorskip(
