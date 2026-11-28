@@ -1,8 +1,9 @@
-# drawio skill — working notes (auto-loaded)
+# drawio plugin — working notes (auto-loaded)
 
-This repo is one Claude skill: a generator template plus a geometric validator
-for `.drawio` architecture diagrams. `SKILL.md` is the model-facing reference
-and the product. Everything else supports it.
+This repo is a one-plugin Claude Code marketplace. The plugin's one skill,
+`create-diagram`, is a generator template plus a geometric validator for `.drawio`
+architecture diagrams. `skills/create-diagram/SKILL.md` is the model-facing reference and the
+product. Everything else supports it.
 
 Global shell, git, and process rules are the global standards that each agent installs from
 `dev-setup/standards/` (for Claude Code, `~/.claude/CLAUDE.md`). They are not
@@ -12,31 +13,31 @@ restated here.
 
 | Question | File |
 | ---------- | ------ |
-| How do I use the skill? | [SKILL.md](SKILL.md) |
+| How do I use the skill? | [SKILL.md](skills/create-diagram/SKILL.md) |
 | What is this repo, in 30 seconds? | [README.md](README.md) |
 | How is the code put together? | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| How do I refine, package, and install it? | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) |
+| How do I refine and release it? | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) |
 | What shipped, and when? | [CHANGELOG.md](CHANGELOG.md) |
 | What is still open? | [docs/ROADMAP.md](docs/ROADMAP.md) |
 
 ## Rules specific to this repo
 
 - **Stdlib only in the shipped code.** `validate.py`, `render_png.py`,
-  `list_icons.py`, `package_skill.py` and `assets/build_template.py` must import
-  nothing outside the standard library. The skill is a self-contained drop into
-  `~/.claude/skills/`; a third-party import would have to be installed on every
-  machine before a diagram could be built. `preview.py` is the one exception and
-  is documented as such.
-- **The version lives in `SKILL.md` frontmatter.** The Skills UI reads it from
-  there — not from the archive filename or the CHANGELOG. The top CHANGELOG
-  entry mirrors it.
-- **Never hand-build the `.skill` archive.** Run `scripts/package_skill.py`.
-  Hand-built zips have shipped `.gitignore` and tool caches.
+  `list_icons.py` and `assets/build_template.py` must import nothing outside the
+  standard library. The plugin installs with no setup step; a third-party import
+  would have to be installed on every machine before a diagram could be built.
+  `preview.py` is the one exception and is documented as such.
+- **The version lives in `.claude-plugin/plugin.json`, and only there.** An installed plugin
+  updates only when it changes, so every release bumps it; the top CHANGELOG entry mirrors
+  it, and `tests/test_plugin.py` checks both.
+- **SKILL.md names bundled files as `"${CLAUDE_SKILL_DIR}/…"`.** A bare `scripts/…` resolves
+  against the user's working folder, not the installed plugin. `tests/test_plugin.py` checks
+  it.
 - **A clean validate is not the bar.** Every genuinely interesting defect found
   in this project — a blank icon plate, an arrow struck through a caption,
   unreadable dark labels — was found by looking at a render. Regenerate
   `renders/` at the end of a phase and look at both themes.
-- **`references/icons.md` is machine-readable.** `list_icons.py` parses its
+- **`skills/create-diagram/references/icons.md` is machine-readable.** `list_icons.py` parses its
   tables. Keep the table shape; there is no second copy of the catalog.
 
 ## Validator invariants — do not undo these
@@ -97,8 +98,8 @@ when touching `list_icons.py`.
 ## Decisions taken and not taken
 
 - **No pip-installable helper library.** The helpers stay vendored inline in
-  `assets/build_template.py` and each example. A skill has to be a
-  self-contained folder, the helpers are short, and each generator grows its own
+  `assets/build_template.py` and each example. The skill has to work with no
+  setup step, the helpers are short, and each generator grows its own
   variants of `box()`. If one repo copies them across many diagrams, factor a
   local module *in that repo* — not here.
 - **No hand-authored dark colours.** Dropped in 1.3.0 after measuring a real
@@ -119,7 +120,9 @@ when touching `list_icons.py`.
   grey for any colour matplotlib cannot parse, so a pre-1.3.0 diagram previews
   in grey rather than failing. Render the PNG for a faithful picture of an
   older file.
-- **`renders/` is committed, and excluded from the package.** For a diagramming
-  skill the pictures are the product, so the repo records what each phase looked
-  like and a geometry change shows a changed picture. Users installing the skill
-  do not need 500 KB of PNGs.
+- **`renders/` is committed.** For a diagramming skill the pictures are the product, so the
+  repo records what each phase looked like and a geometry change shows a changed picture.
+  The whole repository is the plugin source, so tests, docs and renders install too: about
+  500 KB, accepted in 2.0.0 rather than splitting the repository.
+- **No `.skill` package (since 2.0.0).** The plugin installs and updates from GitHub through
+  the claude.ai marketplace; the hand-built, then scripted, archive is gone.

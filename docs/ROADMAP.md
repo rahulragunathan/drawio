@@ -59,10 +59,8 @@ Highest priority first. Priority definitions and full detail in [ENHANCEMENTS.md
 | ---- | ------------- | ---------- | -------- |
 | [ENH-01](ENHANCEMENTS.md#enh-01) | One verify gate that runs lint, tests, and a live example build | Medium | ~2 hours |
 | [ENH-03](ENHANCEMENTS.md#enh-03) | Mark a container explicitly instead of inferring it from its style | Medium | ~3 hours |
-| [ENH-04](ENHANCEMENTS.md#enh-04) | Refuse to package a file that resolves outside the skill root | Medium | ~1 hour |
 | [ENH-02](ENHANCEMENTS.md#enh-02) | Catch a stale architecture render before it is reviewed | Low | ~1 hour |
 | [ENH-05](ENHANCEMENTS.md#enh-05) | Sanity-check an icon-name refresh before it overwrites the catalog | Low | ~1 hour |
-| [ENH-06](ENHANCEMENTS.md#enh-06) | Root the archive at the skill's declared name, not the directory's | Low | ~30 minutes |
 
 ## Open Questions
 

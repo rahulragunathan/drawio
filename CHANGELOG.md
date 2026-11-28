@@ -35,6 +35,7 @@ it.
 
 - **The `.skill` package.** `package_skill.py`, its test and the packaging steps are gone: the
   plugin installs and updates from GitHub instead.
+  ENH-04 and ENH-06, two packaging enhancements, are closed as obsolete.
 
 ## [1.4.3] - 2026-11-18
 

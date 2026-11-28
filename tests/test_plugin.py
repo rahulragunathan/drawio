@@ -77,3 +77,26 @@ def test_plugin_validates(manifest):
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_skill_names_no_fixed_install_path():
+    # Fails if a doc points at the old loose-skill install or packaging, or
+    # SKILL.md names a bundled file relative to the caller's folder instead of
+    # the skill's own.
+    docs = [
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "AGENTS.md",
+        *SKILL_ROOT.rglob("*.md"),
+        *(REPO_ROOT / "docs").glob("*.md"),
+    ]
+    for path in docs:
+        text = path.read_text()
+        for stale in ("~/.claude/skills", "drawio.skill", "package_skill.py"):
+            assert stale not in text, f"{path.relative_to(REPO_ROOT)} names {stale}"
+    skill = (SKILL_ROOT / "SKILL.md").read_text()
+    bare = re.findall(
+        r"(?<![}/\w])(?:scripts|assets|references|examples)/[\w.-]+\.\w+", skill
+    )
+    assert not bare, (
+        f"SKILL.md names bundled files without ${{CLAUDE_SKILL_DIR}}: {bare}"
+    )

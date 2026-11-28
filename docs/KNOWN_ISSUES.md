@@ -23,7 +23,7 @@ the record lives in [CHANGELOG.md](../CHANGELOG.md). IDs are never reused.
 ## KI-02 — A compressed .drawio validates as clean no matter what it contains
 
 **Severity:** High
-**Where:** [scripts/validate.py:354](../scripts/validate.py#L354), `parse_drawio`
+**Where:** [scripts/validate.py:354](../skills/create-diagram/scripts/validate.py#L354), `parse_drawio`
 
 ### What happens
 
@@ -84,7 +84,7 @@ than in any check, and both want the same new fixture family.
 ## KI-03 — Multi-page diagrams are merged into one canvas by non-unique cell IDs
 
 **Severity:** High
-**Where:** [scripts/validate.py:362](../scripts/validate.py#L362), `parse_drawio`
+**Where:** [scripts/validate.py:362](../skills/create-diagram/scripts/validate.py#L362), `parse_drawio`
 
 ### What happens
 
@@ -138,7 +138,7 @@ Bundle with [KI-02](#ki-02).
 ## KI-04 — Stub squaring accepts a stub that leaves the anchor in the wrong direction
 
 **Severity:** High
-**Where:** [scripts/validate.py:495-516](../scripts/validate.py#L495-L516), `_square_front` / `_square_back`
+**Where:** [scripts/validate.py:495-516](../skills/create-diagram/scripts/validate.py#L495-L516), `_square_front` / `_square_back`
 
 ### What happens
 
@@ -198,7 +198,7 @@ plus the existing diagonal-stub guard that must not.
 ## KI-05 — A label in a separate edgeLabel cell escapes every label check
 
 **Severity:** High
-**Where:** [scripts/validate.py:389](../scripts/validate.py#L389) and [:466](../scripts/validate.py#L466), `parse_drawio`
+**Where:** [scripts/validate.py:389](../skills/create-diagram/scripts/validate.py#L389) and [:466](../skills/create-diagram/scripts/validate.py#L466), `parse_drawio`
 
 ### What happens
 
@@ -222,7 +222,7 @@ edge, not a rectangle. Skipping its *text* is not. The parent edge keeps
 `SHORT_LABELLED_EDGE` all treat the edge as unlabelled and never run, while the
 label is plainly visible in draw.io.
 
-[SKILL.md](../SKILL.md) documents separate `edgeLabel` children as a normal
+[SKILL.md](../skills/create-diagram/SKILL.md) documents separate `edgeLabel` children as a normal
 Desktop round-trip artifact, so this is the expected shape of any hand-tuned
 file — exactly the files most likely to have label problems.
 
@@ -252,7 +252,7 @@ label's text and position out of the shapes draw.io actually writes.
 ## KI-01 — The icon catalog publishes keys the generator helpers reject
 
 **Severity:** Medium
-**Where:** [references/icons.md](../references/icons.md) · [scripts/list_icons.py:253-256](../scripts/list_icons.py#L253-L256) · [assets/build_template.py:404-405](../assets/build_template.py#L404-L405)
+**Where:** [references/icons.md](../skills/create-diagram/references/icons.md) · [scripts/list_icons.py:253-256](../skills/create-diagram/scripts/list_icons.py#L253-L256) · [assets/build_template.py:404-405](../skills/create-diagram/assets/build_template.py#L404-L405)
 
 ### What happens
 
@@ -337,7 +337,7 @@ today and would have caught this on the commit that introduced the catalog.
 ## KI-06 — Labels on `<object>` wrappers are lost
 
 **Severity:** Medium
-**Where:** [scripts/validate.py:408](../scripts/validate.py#L408) and [:466](../scripts/validate.py#L466), `parse_drawio`
+**Where:** [scripts/validate.py:408](../skills/create-diagram/scripts/validate.py#L408) and [:466](../skills/create-diagram/scripts/validate.py#L466), `parse_drawio`
 
 ### What happens
 
@@ -380,7 +380,7 @@ and a wrapped box.
 ## KI-07 — The title-band exemption applies to every vertical segment of the edge
 
 **Severity:** Medium
-**Where:** [scripts/validate.py:987](../scripts/validate.py#L987), `validate`
+**Where:** [scripts/validate.py:987](../skills/create-diagram/scripts/validate.py#L987), `validate`
 
 ### What happens
 
@@ -427,7 +427,7 @@ entry stub and one a fly-over, and assert exactly one violation.
 ## KI-08 — A label's position ignores the path-relative geometry draw.io stores
 
 **Severity:** Medium
-**Where:** [scripts/validate.py:553](../scripts/validate.py#L553), `edge_label_center`; [:448-451](../scripts/validate.py#L448-L451), `parse_drawio`
+**Where:** [scripts/validate.py:553](../skills/create-diagram/scripts/validate.py#L553), `edge_label_center`; [:448-451](../skills/create-diagram/scripts/validate.py#L448-L451), `parse_drawio`
 
 ### What happens
 
@@ -476,7 +476,7 @@ Bundle with [KI-05](#ki-05) and [KI-06](#ki-06).
 ## KI-09 — Icon name matching is case-insensitive for image paths, which are not
 
 **Severity:** Low
-**Where:** [scripts/validate.py:915](../scripts/validate.py#L915), `validate`
+**Where:** [scripts/validate.py:915](../skills/create-diagram/scripts/validate.py#L915), `validate`
 
 ### What happens
 
@@ -516,7 +516,7 @@ per kind.
 ## KI-10 — Only four exact HTML break spellings are treated as line breaks
 
 **Severity:** Low
-**Where:** [scripts/validate.py:600](../scripts/validate.py#L600), `normalise_label`
+**Where:** [scripts/validate.py:600](../skills/create-diagram/scripts/validate.py#L600), `normalise_label`
 
 ### What happens
 
