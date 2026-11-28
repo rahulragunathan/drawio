@@ -156,3 +156,18 @@ def test_a_flag_missing_its_value_reports_usage(capsys):
 
     assert code == 2
     assert "--search" in capsys.readouterr().out
+
+
+def test_refresh_refuses_to_write_outside_a_checkout(tmp_path, capsys, monkeypatch):
+    # Fails if --refresh writes the name list into an installed copy (no git
+    # checkout above it), which the next plugin sync would replace anyway.
+    installed = tmp_path / "plugins" / "cache" / "assets" / "icon_names.txt.gz"
+    monkeypatch.setattr(list_icons, "NAMES_FILE", installed)
+    monkeypatch.setenv("DRAWIO_APP", str(tmp_path / "nowhere"))
+
+    code = list_icons.main(["--refresh"])
+
+    out = capsys.readouterr()
+    assert code == 1
+    assert "checkout" in (out.out + out.err)
+    assert not installed.exists()
