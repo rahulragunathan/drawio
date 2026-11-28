@@ -27,7 +27,7 @@ Corridor allocation (see SKILL.md "Routing strategy")
   x=1350  vertical channel down from s3 to the return lane
 
 Run:  python examples/build_aws_vpc_pipeline.py
-Then: python scripts/validate.py aws-vpc-pipeline.drawio
+Then: python "${CLAUDE_SKILL_DIR}/scripts/validate.py" aws-vpc-pipeline.drawio
 """
 
 import xml.etree.ElementTree as ET

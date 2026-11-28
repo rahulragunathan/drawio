@@ -1,4 +1,4 @@
-"""Tests for scripts/preview.py.
+"""Tests for skills/create-diagram/scripts/preview.py.
 
 The preview is a layout check. Anything that makes it abort costs more than a
 mis-drawn colour, so the colour path is the part worth pinning.

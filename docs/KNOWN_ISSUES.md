@@ -119,7 +119,7 @@ Parse per `<diagram>` element and validate each page independently, reporting
 violations with the page name. `validate()` currently returns a flat list of
 strings, and `main()` prints them under one filename heading, so the page label
 has to be carried into the message text or the return type has to change —
-`scripts/render_examples.py` and `scripts/preview.py` both consume
+`tools/render_examples.py` and the skill's `scripts/preview.py` both consume
 `validate()`/`parse_drawio`, so check those call sites before changing a
 signature.
 
@@ -293,7 +293,7 @@ the draw.io name `lambda` in a separate column.
 Follow the documented workflow exactly:
 
 ```bash
-python scripts/list_icons.py --search lambda      # prints: aws-lambda   lambda
+python skills/create-diagram/scripts/list_icons.py --search lambda      # prints: aws-lambda   lambda
 ```
 
 Paste that key into a generator copied from the template:

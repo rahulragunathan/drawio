@@ -1,4 +1,4 @@
-"""Tests for scripts/render_png.py.
+"""Tests for skills/create-diagram/scripts/render_png.py.
 
 Covers the argument parsing (a pure function — no drawio CLI needed) and
 the one piece of plumbing that matters: that an explicit --output path

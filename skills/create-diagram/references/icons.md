@@ -13,8 +13,8 @@ icon_box(40, 80, 220, 60, "Order Handler", fill=..., icon="aws:lambda")
 icon_node(40, 80, "Order Handler", icon="aws:lambda")
 ```
 
-Every name here is verified against draw.io Desktop 31.1.8. `scripts/list_icons.py
---verify` re-checks them against your local install; `--search <term>` finds a key.
+Every name here is verified against draw.io Desktop 31.1.8. `list_icons.py
+--verify`, run in a checkout of the drawio repository, re-checks them against draw.io; `--search <term>` finds a key.
 
 **Not every logo is here.** These are the 128 most-used services. draw.io ships
 about 11,500 names in total — `--dump-names --family aws` lists them all, and any

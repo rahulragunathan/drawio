@@ -14,12 +14,13 @@ Conventions encoded here (read SKILL.md for the full rationale):
 - Multi-line edge labels use <div> tags, NOT \\n (drawio Desktop round-trip).
 
 After running this generator, run:
-    python scripts/validate.py <output.drawio>
+    python "${CLAUDE_SKILL_DIR}/scripts/validate.py" <output.drawio>
 to check for CROSSING / OVERLAP / TEXT_OVERLAP / LABEL_OVERLAP /
 LABEL_BOX_OVERLAP / SHORT_LABELLED_EDGE / DIAGONAL / DANGLING violations.
 Then render the PNG and LOOK at it — a clean validate says nothing about
 whether labels have room or whether either theme is legible:
-    python scripts/render_png.py <output.drawio>   # foo.drawio -> foo.png
+    python "${CLAUDE_SKILL_DIR}/scripts/render_png.py" <output.drawio>
+(foo.drawio -> foo.png)
 
 Reserve routing corridors before writing any edges, and record the
 allocation here (e.g. "y=225 lane — pipeline fan-in; x=850 channel — app

@@ -9,7 +9,7 @@ Both themes are produced even though the skill no longer authors dark
 colours — draw.io inverts them on export, and its choices still have to be
 looked at.
 
-    python scripts/render_examples.py
+    python tools/render_examples.py
 
 Needs the draw.io Desktop CLI. Every example is validated first; a diagram
 with violations is reported and not rendered, because reviewing a picture of

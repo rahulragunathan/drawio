@@ -51,7 +51,7 @@ command with one exit code, rather than four a maintainer has to remember in ord
 
 Keep it stdlib and shell only, and make it pass on a bare checkout: `preview.py` needs
 matplotlib and `render_png.py` needs the draw.io CLI, so neither belongs in the gate.
-`scripts/render_examples.py` walks `examples/build_*.py` and validates each result, but it
+`tools/render_examples.py` walks `examples/build_*.py` and validates each result, but it
 exits early when the CLI is absent — so call pytest, which already covers both examples
 without one, rather than reusing that walk.
 

@@ -1,4 +1,4 @@
-"""Tests for scripts/validate.py.
+"""Tests for skills/create-diagram/scripts/validate.py.
 
 Each test builds a minimal .drawio fixture into tmp_path that exhibits
 exactly one violation type (or zero), then asserts the validator

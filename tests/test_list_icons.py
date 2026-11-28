@@ -1,4 +1,4 @@
-"""Tests for scripts/list_icons.py.
+"""Tests for skills/create-diagram/scripts/list_icons.py.
 
 The asar reader is exercised against a synthetic archive built in tmp_path,
 not against the 147 MB draw.io bundle: the format is what needs pinning down,

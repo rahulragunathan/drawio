@@ -26,7 +26,7 @@ Conventions exercised:
 
 Run from the skill root:
     python examples/build_three_tier_web.py
-    python scripts/validate.py three-tier-web.drawio
+    python "${CLAUDE_SKILL_DIR}/scripts/validate.py" three-tier-web.drawio
 """
 
 import xml.etree.ElementTree as ET
