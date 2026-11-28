@@ -5,12 +5,37 @@ follows [semver](https://semver.org/): patch = tuning / fixes / docs, minor =
 additive features (new check or helper), major = breaking changes to the
 locked conventions, helper signatures, or the validator CLI contract.
 
-The authoritative version is the `version:` field in `SKILL.md` frontmatter
-(the Customize → Skills UI reads it from there). Keep this changelog's top
-entry in sync with it before packaging. See
-[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) → Packaging.
+The authoritative version is the `version` field in `.claude-plugin/plugin.json`. A plugin
+updates only when it changes, so every release bumps it, and this changelog's top entry matches
+it.
 
 ## [Unreleased]
+
+## [2.0.0] - 2026-11-28 — Plugins from the claude.ai account
+
+### Changed
+
+- **drawio is now a Claude Code plugin, and its skill is `create-diagram`.** The repository is a
+  one-plugin marketplace: `.claude-plugin/plugin.json` and `marketplace.json`, with the skill in
+  `skills/create-diagram/`. It loads as `/drawio:create-diagram`. Add the
+  `rahulragunathan/drawio` marketplace on your claude.ai account with Sync automatically on, and
+  install `drawio`; it then updates itself after each release. **Migration:** remove the old
+  `drawio` loose skill from `~/.claude/skills`, and any `drawio` skill uploaded under claude.ai →
+  Customize → Skills, once `/drawio:create-diagram` works.
+- **SKILL.md names every bundled file from the skill's own folder**, as
+  `"${CLAUDE_SKILL_DIR}/…"`, so the template, scripts, catalog and examples resolve wherever the
+  plugin is installed, and never against a same-named file in your working folder.
+- **`list_icons.py --refresh` refuses to write outside a git checkout**, so it cannot change an
+  installed copy, which the next sync would replace anyway.
+- `render_examples.py` moves to `tools/`, since it maintains this repository's `renders/` and is
+  not part of the skill.
+- The version lives in `plugin.json`; SKILL.md's frontmatter no longer carries one.
+
+### Removed
+
+- **The `.skill` package.** `package_skill.py`, its test and the packaging steps are gone: the
+  plugin installs and updates from GitHub instead.
+  ENH-04 and ENH-06, two packaging enhancements, are closed as obsolete.
 
 ## [1.4.3] - 2026-11-18
 

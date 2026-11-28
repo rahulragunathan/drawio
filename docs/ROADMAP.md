@@ -31,7 +31,7 @@ report clean on a diagram it never examined, so they lead the queue.
 
 ### Phases
 
-No phase is in flight. Next is KI-02 through KI-05, bundled as the two file-reading defects
+The phase in flight is in [PHASE_RECORD.md](PHASE_RECORD.md). After it, next is KI-02 through KI-05, bundled as the two file-reading defects
 and then the three label-reading ones.
 
 ## Known Issues
@@ -48,8 +48,11 @@ Most severe first. Severity definitions and full detail in [KNOWN_ISSUES.md](KNO
 | [KI-06](KNOWN_ISSUES.md#ki-06) | Labels on `<object>` wrappers are lost | Medium |
 | [KI-07](KNOWN_ISSUES.md#ki-07) | The title-band exemption applies to every vertical segment of the edge | Medium |
 | [KI-08](KNOWN_ISSUES.md#ki-08) | A label's position ignores the path-relative geometry draw.io stores | Medium |
+| [KI-11](KNOWN_ISSUES.md#ki-11) | Some docs still read as if the skill were a checkout you edit | Medium |
+| [KI-12](KNOWN_ISSUES.md#ki-12) | The refresh guard trusts any .git above the catalog | Medium |
 | [KI-09](KNOWN_ISSUES.md#ki-09) | Icon name matching is case-insensitive for image paths, which are not | Low |
 | [KI-10](KNOWN_ISSUES.md#ki-10) | Only four exact HTML break spellings are treated as line breaks | Low |
+| [KI-13](KNOWN_ISSUES.md#ki-13) | The plugin and refresh tests miss some ways to break what they pin | Low |
 
 ## Enhancements
 
@@ -59,10 +62,8 @@ Highest priority first. Priority definitions and full detail in [ENHANCEMENTS.md
 | ---- | ------------- | ---------- | -------- |
 | [ENH-01](ENHANCEMENTS.md#enh-01) | One verify gate that runs lint, tests, and a live example build | Medium | ~2 hours |
 | [ENH-03](ENHANCEMENTS.md#enh-03) | Mark a container explicitly instead of inferring it from its style | Medium | ~3 hours |
-| [ENH-04](ENHANCEMENTS.md#enh-04) | Refuse to package a file that resolves outside the skill root | Medium | ~1 hour |
 | [ENH-02](ENHANCEMENTS.md#enh-02) | Catch a stale architecture render before it is reviewed | Low | ~1 hour |
 | [ENH-05](ENHANCEMENTS.md#enh-05) | Sanity-check an icon-name refresh before it overwrites the catalog | Low | ~1 hour |
-| [ENH-06](ENHANCEMENTS.md#enh-06) | Root the archive at the skill's declared name, not the directory's | Low | ~30 minutes |
 
 ## Open Questions
 

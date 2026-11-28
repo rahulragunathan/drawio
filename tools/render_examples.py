@@ -9,7 +9,7 @@ Both themes are produced even though the skill no longer authors dark
 colours — draw.io inverts them on export, and its choices still have to be
 looked at.
 
-    python scripts/render_examples.py
+    python tools/render_examples.py
 
 Needs the draw.io Desktop CLI. Every example is validated first; a diagram
 with violations is reported and not rendered, because reviewing a picture of
@@ -26,7 +26,8 @@ import tempfile
 from pathlib import Path
 
 
-SKILL_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SKILL_ROOT = REPO_ROOT / "skills" / "create-diagram"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from render_png import find_drawio_cli, render  # noqa: E402
@@ -34,7 +35,7 @@ from validate import validate, violation_severity  # noqa: E402
 
 
 EXAMPLES_DIR = SKILL_ROOT / "examples"
-RENDERS_DIR = SKILL_ROOT / "renders"
+RENDERS_DIR = REPO_ROOT / "renders"
 THEMES = ("light", "dark")
 
 
@@ -112,7 +113,7 @@ def main() -> int:
                         f"✗ {diagram.stem}: only {done}/{len(THEMES)} themes rendered"
                     )
 
-    print(f"\n{written} PNG(s) in {RENDERS_DIR.relative_to(SKILL_ROOT)}/")
+    print(f"\n{written} PNG(s) in {RENDERS_DIR.relative_to(REPO_ROOT)}/")
     if failed:
         print(f"FAILED: {', '.join(failed)}")
         return 1

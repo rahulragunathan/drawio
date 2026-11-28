@@ -1,11 +1,10 @@
 ---
-name: drawio
-version: 1.4.3
+name: create-diagram
 description: Use this skill whenever the user wants to generate, validate, or modify architecture diagrams as draw.io (.drawio / diagrams.net) XML files. Trigger on any mention of .drawio, draw.io, diagrams.net, or requests for architecture diagrams where routing control matters — for example, when auto-layout tools (Lucid, Mermaid, Graphviz) have produced arrows that cross boxes, overlap labels, or pile into a single corridor. The skill emits explicit waypoints, anchor coordinates, and label offsets so routing is deterministic, then runs a nine-check geometric validator (CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON). Diagrams can carry real vendor logos — AWS, Azure, GCP, Kubernetes, Cisco — from draw.io's own stencil library, or any logo you supply as an SVG. Use this skill even if the user only says 'architecture diagram' or 'system diagram' without naming draw.io — it produces .drawio output that opens at app.diagrams.net without auth and round-trips through draw.io Desktop without diff churn. Also use it when validating, fixing, or PNG-rendering an existing .drawio file.
 license: MIT
 ---
 
-# drawio
+# create-diagram
 
 Build .drawio architecture diagrams with deterministic orthogonal routing, then run a geometric validator that catches the failure modes auto-layout tools leave behind.
 
@@ -17,30 +16,30 @@ This skill encodes those decisions explicitly. You write the coordinates; the va
 
 ## What's in the skill
 
+Every bundled file is named from the skill's own folder, `"${CLAUDE_SKILL_DIR}"`, which Claude Code fills in
+when the skill loads. Quote it: the path can contain spaces. Files you write, such as your
+generator and its `.drawio`, stay in your own working folder.
+
 | Path | Purpose |
 | --- | --- |
-| `scripts/validate.py` | Geometric validator. Nine checks: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON. Run on any `.drawio` file. |
-| `scripts/render_png.py` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere; `--theme dark\|light\|auto`). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
-| `scripts/preview.py` | Offline preview renderer. Reuses `validate.py`'s geometry, so it shows exactly what the validator sees. Approximate text wrapping — trust it for layout, not final fidelity. **Needs `matplotlib`**, which the rest of the skill does not — in a project venv without it, reach for `render_png.py` instead (the draw.io CLI is a system binary, not a venv dependency). |
-| `scripts/render_examples.py` | Rebuilds every example, validates it, and writes `renders/<name>-light.png` and `-dark.png`. Run at the end of a piece of work: a render is where you see the problems no check can catch. |
-| `scripts/package_skill.py` | Builds `../drawio.skill`, the uploadable archive. Run it at the end of a phase so the package matches the commit. |
-| `scripts/list_icons.py` | Browse the icon catalog (`--search redis`), or refresh it against a newer draw.io (`--verify`, `--refresh`). Only the refresh modes need draw.io installed. |
-| `references/icons.md` | The icon catalog: 128 curated vendor icons with brand colours. Read it to pick an icon. |
-| `assets/icon_names.txt.gz` | Every icon name draw.io ships (~11,500), used by `UNKNOWN_ICON` to tell a typo from a real name. Generated; do not hand-edit. |
-| `assets/build_template.py` | Minimal starter generator. Copy, rename, customise. Vendors the helpers (`container`, `box`, `edge`, `sub`, `desc`, `icon_box`, `icon_node`, `svg_icon`) inline. |
-| `examples/build_three_tier_web.py` | Comprehensive worked example: three-tier web app, 11 solid boxes, 11 edges, every locked convention exercised. Validates clean. |
-| `examples/build_aws_vpc_pipeline.py` | Worked example **with vendor icons**: an AWS pipeline, a VPC nested inside a cloud zone, and one embedded SVG for a logo draw.io does not ship. Validates clean. |
-| `tests/test_validate.py` | Pytest suite — one minimal fixture per validator check, guards for each exemption, plus a regression test on the bundled example. |
-| `tests/fixtures/builders.py` | Fixture builders that produce minimal `.drawio` files exhibiting exactly one violation type each. |
+| `"${CLAUDE_SKILL_DIR}/scripts/validate.py"` | Geometric validator. Nine checks: CROSSING, OVERLAP, TEXT_OVERLAP, LABEL_OVERLAP, LABEL_BOX_OVERLAP, SHORT_LABELLED_EDGE, DIAGONAL, DANGLING, UNKNOWN_ICON. Run on any `.drawio` file. |
+| `"${CLAUDE_SKILL_DIR}/scripts/render_png.py"` | Renders `.drawio` → `.png` via the draw.io Desktop CLI (`foo.drawio` → `foo.png`; `-o path.png` to send it elsewhere; `--theme dark\|light\|auto`). Needs `drawio` on PATH (macOS auto-detects the app bundle). Pixel-accurate. |
+| `"${CLAUDE_SKILL_DIR}/scripts/preview.py"` | Offline preview renderer. Reuses `validate.py`'s geometry, so it shows exactly what the validator sees. Approximate text wrapping — trust it for layout, not final fidelity. **Needs `matplotlib`**, which the rest of the skill does not — in a project venv without it, reach for `render_png.py` instead (the draw.io CLI is a system binary, not a venv dependency). |
+| `"${CLAUDE_SKILL_DIR}/scripts/list_icons.py"` | Browse the icon catalog (`--search redis`). Its `--verify` and `--refresh` modes are maintainer actions on a checkout of the drawio repository, and `--refresh` refuses to write into an installed copy. |
+| `"${CLAUDE_SKILL_DIR}/references/icons.md"` | The icon catalog: 128 curated vendor icons with brand colours. Read it to pick an icon. |
+| `"${CLAUDE_SKILL_DIR}/assets/icon_names.txt.gz"` | Every icon name draw.io ships (~11,500), used by `UNKNOWN_ICON` to tell a typo from a real name. Generated; do not hand-edit. |
+| `"${CLAUDE_SKILL_DIR}/assets/build_template.py"` | Minimal starter generator. Copy, rename, customise. Vendors the helpers (`container`, `box`, `edge`, `sub`, `desc`, `icon_box`, `icon_node`, `svg_icon`) inline. |
+| `"${CLAUDE_SKILL_DIR}/examples/build_three_tier_web.py"` | Comprehensive worked example: three-tier web app, 11 solid boxes, 11 edges, every locked convention exercised. Validates clean. |
+| `"${CLAUDE_SKILL_DIR}/examples/build_aws_vpc_pipeline.py"` | Worked example **with vendor icons**: an AWS pipeline, a VPC nested inside a cloud zone, and one embedded SVG for a logo draw.io does not ship. Validates clean. |
 
 ## Workflow
 
-1. **Copy the template.** `cp assets/build_template.py my-diagram.py`. Edit constants, containers, boxes, then edges.
-2. **Build.** `python my-diagram.py`. For a vendor logo, find its key first: `python scripts/list_icons.py --search lambda`. The script writes a `.drawio` file (default: cwd).
-3. **Validate.** `python scripts/validate.py my-diagram.drawio`. Fix violations (see the failure-mode table below).
+1. **Copy the template** into your working folder: `cp "${CLAUDE_SKILL_DIR}/assets/build_template.py" my-diagram.py`. Edit constants, containers, boxes, then edges.
+2. **Build.** `python my-diagram.py`. For a vendor logo, find its key first: `python "${CLAUDE_SKILL_DIR}/scripts/list_icons.py" --search lambda`. The script writes a `.drawio` file (default: cwd).
+3. **Validate.** `python "${CLAUDE_SKILL_DIR}/scripts/validate.py" my-diagram.drawio`. Fix violations (see the failure-mode table below).
 4. **Open.** Drop the file at <https://app.diagrams.net> (no auth) or open it in draw.io Desktop. The diagram round-trips without diff churn — if you edit in Desktop and save, your generator can read the result back.
-5. **(Optional) Preview inline.** `python scripts/preview.py my-diagram.drawio` renders an approximate PNG with only matplotlib (which is *not* a dependency of the rest of the skill — in a project venv you'll often find `render_png.py` is the available path) — handy when the draw.io CLI isn't available (sandboxes, VMs). It draws the exact geometry the validator checks, so it's reliable for judging routing, lane spacing, and label placement. **It does not wrap box text the way draw.io does** — long box descriptions will overflow in the preview but wrap correctly in real draw.io, so don't trim box text based on a preview overflow alone.
-6. **Render the PNG and look at it.** `python scripts/render_png.py my-diagram.drawio` writes `my-diagram.png` (pixel-accurate; needs the draw.io Desktop CLI on PATH). Add `-o docs/architecture.png` when the rendered PNG is committed somewhere other than beside its source — it creates missing parent directories, and takes exactly one input. Treat this as part of the loop, not an optional extra — a clean validate says nothing about whether labels have *room*, whether column gaps are cramped, or whether either theme is legible. Looking at the render is what catches those.
+5. **(Optional) Preview inline.** `python "${CLAUDE_SKILL_DIR}/scripts/preview.py" my-diagram.drawio` renders an approximate PNG with only matplotlib (which is *not* a dependency of the rest of the skill — in a project venv you'll often find `render_png.py` is the available path) — handy when the draw.io CLI isn't available (sandboxes, VMs). It draws the exact geometry the validator checks, so it's reliable for judging routing, lane spacing, and label placement. **It does not wrap box text the way draw.io does** — long box descriptions will overflow in the preview but wrap correctly in real draw.io, so don't trim box text based on a preview overflow alone.
+6. **Render the PNG and look at it.** `python "${CLAUDE_SKILL_DIR}/scripts/render_png.py" my-diagram.drawio` writes `my-diagram.png` (pixel-accurate; needs the draw.io Desktop CLI on PATH). Add `-o docs/architecture.png` when the rendered PNG is committed somewhere other than beside its source — it creates missing parent directories, and takes exactly one input. Treat this as part of the loop, not an optional extra — a clean validate says nothing about whether labels have *room*, whether column gaps are cramped, or whether either theme is legible. Looking at the render is what catches those.
 
 ## Locked conventions
 
@@ -143,7 +142,7 @@ The helpers take `family:name` — `aws:lambda`, `azure:compute/Function_Apps.sv
 `gcp:bigquery`, `k8s:pod`, `cisco:l3_switch`. Six families are known: `aws`,
 `azure`, `gcp`, `k8s`, `cisco`, `net`.
 
-`python scripts/list_icons.py --search redis` finds an entry, but **it prints the
+`python "${CLAUDE_SKILL_DIR}/scripts/list_icons.py" --search redis` finds an entry, but **it prints the
 catalog's row key, not the argument.** The catalog spells the same icon with a
 hyphen (`aws-lambda`); the helpers need a colon (`aws:lambda`). Swap the first
 hyphen for a colon before pasting. Passing the hyphen form raises
@@ -198,13 +197,13 @@ Checks are split into two severities. **Errors** fail the build (non-zero exit);
 | `SHORT_LABELLED_EDGE` | warning | A labelled edge's total rendered length is shorter than its own label's estimated text width (same per-character estimator, scaled to the label's fontSize, padding excluded). | Two boxes placed a 40 px gap apart with a 13-character label between them. The label overhangs *both* boxes — but by less than the 8 px `LABEL_BOX_OVERLAP` threshold on each side, and both are the edge's own endpoints, so nothing else sees it. Renders as a stub arrow with a floating caption. Fix by widening the gap or stacking the label into narrower `<div>` lines. |
 | `DIAGONAL` | warning | An **interior** (waypoint-to-waypoint) segment is neither horizontal nor vertical. Anchor stubs are auto-squared into the L-bend draw.io renders, so this fires only when two explicit waypoints are offset on both axes — a route draw.io would square too, making it non-deterministic. | Two waypoints placed without an aligning corner between them. Add the intermediate waypoint. |
 | `DANGLING` | error | An edge's `source` or `target` id doesn't resolve to any shape. | A typo in an id, or a box deleted/renamed without updating the edge. The edge would render detached in draw.io. |
-| `UNKNOWN_ICON` | warning | A cell's stencil, `resIcon`/`prIcon` or image name is not one draw.io ships, or it is a remote URL that only renders where the host is reachable. Suggests the closest real name. | A mistyped stencil name — which draw.io renders as an empty shape and reports no error for, so nothing else catches it. Skipped entirely when `assets/icon_names.txt.gz` is missing. |
+| `UNKNOWN_ICON` | warning | A cell's stencil, `resIcon`/`prIcon` or image name is not one draw.io ships, or it is a remote URL that only renders where the host is reachable. Suggests the closest real name. | A mistyped stencil name — which draw.io renders as an empty shape and reports no error for, so nothing else catches it. Skipped entirely when `${CLAUDE_SKILL_DIR}/assets/icon_names.txt.gz` is missing. |
 
 When violations fire, the message includes the involved edge labels and the offending segment coordinates (and, for overlaps, the overlap size in px) — usually enough to identify the fix without opening the diagram.
 
 **Stub-squaring.** The validator reconstructs each edge's rendered route, squaring the source and target *stubs* (anchor → first/last point) the same way draw.io's `orthogonalEdgeStyle` does. A short diagonal between a box anchor and its neighbouring waypoint is therefore not flagged — draw.io draws it as a clean L-bend, and so does the validator. This is why you don't need to hand-align every connection stub; only genuinely ambiguous interior diagonals warn.
 
-The geometric thresholds (interior buffer, orthogonal tolerance, minimum overlap length, title-band height, label-width estimation) are defined as documented module constants at the top of `scripts/validate.py`. Tighten them for denser diagrams or loosen them if intentional parallel edges trip the checks — it's a one-line change in one place.
+The geometric thresholds (interior buffer, orthogonal tolerance, minimum overlap length, title-band height, label-width estimation) are defined as documented module constants at the top of `${CLAUDE_SKILL_DIR}/scripts/validate.py`. Tighten them for denser diagrams or loosen them if intentional parallel edges trip the checks — it's a one-line change in one place.
 
 ## Suggested colour palette
 
@@ -260,7 +259,7 @@ The validator is a 2D geometric check with a few known blind spots. None of thes
 - **Edge ordering matters for layering.** Boxes must be emitted before edges in the XML for labels to render on top. The bundled `edge()` helper relies on the caller to call `box()` first.
 - **A clean validate says nothing about whether labels have *room*.** `SHORT_LABELLED_EDGE` catches the extreme case (label wider than its whole edge), but a label that technically fits in a 50 px column gap while looking cramped, or one whose estimated width is a character or two off the truth, passes silently. Render the PNG and look at it — that pass catches label-geometry problems no check sees.
 - **Colour and contrast are invisible to the validator.** It ignores colour entirely. A clean validate says nothing about whether the diagram is readable — render the PNG and look at it.
-- **Icons are references, not artwork.** A stencil name or a bundled image path resolves against the renderer: fine in draw.io (browser or Desktop), blank in anything else. `svg_icon()` embeds its bytes and has no such dependency. `UNKNOWN_ICON` verifies a name against the draw.io build the catalog was generated from, so a genuinely newer stencil warns until you run `list_icons.py --refresh`.
+- **Icons are references, not artwork.** A stencil name or a bundled image path resolves against the renderer: fine in draw.io (browser or Desktop), blank in anything else. `svg_icon()` embeds its bytes and has no such dependency. `UNKNOWN_ICON` verifies a name against the draw.io build the catalog was generated from, so a genuinely newer stencil warns until a maintainer refreshes the catalog in the drawio repository.
 - **`preview.py` draws icons as placeholders, not glyphs.** It shows where an icon sits and how much space it takes, labelled with the icon's short name. It also greys any colour matplotlib cannot parse rather than failing. Render the PNG to see the real logo and the real colours.
 - **A blank icon plate validates clean.** A wrapper tile with no `icon_fill` renders as an empty white square; the XML is valid and every check passes. Only a render shows it.
 - **Semantic correctness is a human review item.** A managed service drawn inside a cluster zone, a mislabeled flow, or the wrong trust boundary all validate fine. "Validates clean" is necessary, not sufficient — the finishing pass (theme, label wording, zone membership, balance) is done by eye in Desktop.
@@ -268,9 +267,9 @@ The validator is a 2D geometric check with a few known blind spots. None of thes
 
 ## Why no Python library?
 
-This skill keeps the helpers (`container`, `box`, `edge`, `sub`, `desc`) vendored inline in `assets/build_template.py` and the example, rather than abstracting them into a `pip install`-able library. Reasons:
+This skill keeps the helpers (`container`, `box`, `edge`, `sub`, `desc`) vendored inline in `${CLAUDE_SKILL_DIR}/assets/build_template.py` and the examples, rather than abstracting them into a `pip install`-able library. Reasons:
 
-- Skills are meant to be self-contained drops into `~/.claude/skills/`; a `pip` dependency would defeat that.
+- The skill installs as a plugin with no setup step; a `pip` dependency would add one on every machine.
 - The helpers are ~80 lines total. The cognitive cost of copying them is lower than the cost of managing a pinned dependency that changes underneath downstream diagrams.
 - Each generator script tends to grow custom variants of `box()` (e.g. with extra fontSize controls, gradient fills) that would be awkward to retrofit into a shared library.
 
@@ -280,34 +279,7 @@ If you find yourself copying the helpers across many diagrams in the same repo, 
 
 ## Installation
 
-This skill follows the [Claude skill anatomy](https://docs.claude.com/en/docs/build-with-claude/skills) (SKILL.md + `scripts/` + `assets/` + `references/`).
-
-To package the skill as a `.skill` file (a zip with a `.skill` extension) for upload to Claude:
-
-```bash
-python scripts/package_skill.py     # writes ../drawio.skill
-```
-
-It roots the archive at `drawio/`, so the result contains `drawio/SKILL.md`,
-`drawio/scripts/...` and so on — never nested under a wrapper folder. It drops
-every hidden entry (`.git`, `.venv`, `.gitignore`, tool caches) by rule rather
-than by name, plus `renders/` and `docs/`.
-
-**Do not build the zip by hand.** The exclusion list is the part that goes
-wrong: hand-built archives have shipped `.gitignore` and tool caches.
-
-Bump the `version:` field in this file's frontmatter before packaging — the
-Skills UI reads the displayed version from there, not from the archive filename.
-The exact upload path inside the Claude UI changes occasionally; check
-<https://docs.claude.com/en/docs/build-with-claude/skills> for the current one.
-
-For local-only use with Claude Code, drop the unpacked skill folder into `~/.claude/skills/drawio/`. Restart Claude Code to pick it up.
-
-## Running the tests
-
-```bash
-cd drawio
-python -m pytest        # runs all 94 tests
-```
-
-`tests/test_render_png.py` covers `render_png.py`'s argument contract (`-o` / `--output`, and every invocation it rejects), faking `subprocess.run` at the system boundary so it runs without the draw.io CLI installed. `tests/test_validate.py` covers each validator check independently (a clean fixture plus one fixture per failure mode), the exemption guards (stub-squaring, point-anchored edges, and entering a container from above — each of which must NOT fire), a narrow-exemption guard (a segment running *along* a title band still fires even when both endpoints are inside the container), label-normalisation cases, plus a regression test that runs `examples/build_three_tier_web.py` end-to-end and asserts a clean validation. If you change `scripts/validate.py` or `scripts/render_png.py`, run the tests before committing.
+This skill ships in the `drawio` plugin. Add the `rahulragunathan/drawio` marketplace on your
+claude.ai account (Customize → Plugins) with **Sync automatically** on, and install `drawio`. It
+loads as `/drawio:create-diagram`. The repository's README covers the command-line route and
+how to develop the skill.

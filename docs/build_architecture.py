@@ -4,20 +4,21 @@ The skill draws its own architecture diagram. Regenerate whenever the module
 structure changes, then validate and render:
 
     python docs/build_architecture.py
-    python scripts/validate.py docs/architecture.drawio
-    python scripts/render_png.py docs/architecture.drawio
+    python skills/create-diagram/scripts/validate.py docs/architecture.drawio
+    python skills/create-diagram/scripts/render_png.py docs/architecture.drawio
 
-The helpers below are vendored from assets/build_template.py, unchanged, per
+The helpers below are vendored from
+skills/create-diagram/assets/build_template.py, unchanged, per
 the skill's own convention. Only the five this diagram uses are copied.
 
 Reserved corridors
 ------------------
     x=395  channel — authoring -> validate.py (right of the authoring zone)
     x=410  channel — icons.md -> the generator (15 px clear of x=395)
-    x=885  channel — render_examples.py -> validate.py (inside the check zone)
+    x=885  channel — tools/render_examples.py -> validate.py (inside the check zone)
     x=915  channel — icon_names.txt.gz -> validate.py (between the top zones,
            entering 20 px below the 'Validates' edge so the two do not merge)
-    y=505  lane    — render_examples.py -> renders/ (below the top zones)
+    y=505  lane    — tools/render_examples.py -> renders/ (below the top zones)
 """
 
 import xml.etree.ElementTree as ET
@@ -74,7 +75,7 @@ def cell_id():
 
 
 # --------------------------------------------------------------------------
-# Primitives, vendored from assets/build_template.py.
+# Primitives, vendored from skills/create-diagram/assets/build_template.py.
 # --------------------------------------------------------------------------
 def container(x, y, w, h, title, stroke, fill="#ffffff", fontColor=None, fontSize=14):
     """Dashed-edge zone group. Emit BEFORE the boxes that sit inside it."""
@@ -283,7 +284,7 @@ box(
     20,
     W - 80,
     46,
-    "drawio Skill — Module Architecture",
+    "drawio Plugin — Module Architecture",
     fill="#1f3864",
     fontSize=18,
 )
@@ -361,7 +362,7 @@ render_examples = box(
     390,
     275,
     60,
-    "<b>scripts/render_examples.py</b><br>" + desc("Rebuilds every example"),
+    "<b>tools/render_examples.py</b><br>" + desc("Rebuilds every example"),
     fill=COLOR_CHECK,
     bold=False,
 )
@@ -376,21 +377,21 @@ renders = box(
     fill=COLOR_DIST,
     bold=False,
 )
-packager = box(
+manifest = box(
     1240,
     150,
     210,
     68,
-    "<b>scripts/package_skill.py</b><br>" + desc("Excludes hidden entries"),
+    "<b>.claude-plugin/plugin.json</b><br>" + desc("The one version source"),
     fill=COLOR_DIST,
     bold=False,
 )
-archive = box(
+marketplace = box(
     1240,
     290,
     210,
     60,
-    "<b>../drawio.skill</b><br>" + desc("The upload"),
+    "<b>claude.ai marketplace</b><br>" + desc("Syncs each release"),
     fill=COLOR_DIST,
     bold=False,
 )
@@ -501,7 +502,7 @@ edge(
     entryY=1,
     waypoints=[(735, 505), (1085, 505)],
 )
-edge(packager, archive, color=COLOR_DIST, label="Builds")
+edge(manifest, marketplace, color=COLOR_DIST, label="Versions")
 
 # x=410 channel — the catalog is read while authoring. Vertical entry through
 # the band's title is what TEXT_OVERLAP exempts.

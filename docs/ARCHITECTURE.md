@@ -1,7 +1,7 @@
 # Architecture
 
-How the skill is put together, and why the pieces sit where they do. For how to
-*use* it, read [SKILL.md](../SKILL.md); for how to refine and ship it, read
+How the plugin and its `create-diagram` skill are put together, and why the pieces sit where
+they do. For how to *use* it, read [SKILL.md](../skills/create-diagram/SKILL.md); for how to refine and ship it, read
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ![Module architecture](architecture.png)
@@ -10,8 +10,8 @@ Regenerate the picture whenever the module structure changes:
 
 ```bash
 python docs/build_architecture.py
-python scripts/validate.py docs/architecture.drawio
-python scripts/render_png.py docs/architecture.drawio
+python skills/create-diagram/scripts/validate.py docs/architecture.drawio
+python skills/create-diagram/scripts/render_png.py docs/architecture.drawio
 ```
 
 The source (`architecture.drawio`), its generator (`build_architecture.py`) and
@@ -20,8 +20,10 @@ rather than trusted.
 
 ## The shape of it
 
-There is no application and no library. The skill is four groups of stdlib
-Python that share one geometry module.
+There is no application and no library. The repository is a one-plugin marketplace
+(`.claude-plugin/`), and the plugin's one skill lives in `skills/create-diagram/`. The skill is three
+groups of stdlib Python that share one geometry module; a fourth group, `tools/`, maintains
+the repository. Paths below are relative to the skill folder unless they start with `tools/`.
 
 ### Authoring — a generator per diagram
 
@@ -68,10 +70,10 @@ hands the `.drawio` file to the draw.io Desktop CLI, which does its own parsing
 and renders pixel-accurately. That is the point of keeping both: one shows the
 validator's view of the diagram, the other shows draw.io's.
 
-`scripts/render_examples.py` combines the validator with the CLI renderer — it
+`tools/render_examples.py` combines the validator with the CLI renderer — it
 imports `validate` and `render_png` (not `preview`), rebuilds every
 `examples/build_*.py`, validates the result, and renders the clean ones into
-`renders/` in light and dark. A diagram with errors is reported and not
+the repository's `renders/` in light and dark. A diagram with errors is reported and not
 rendered.
 
 ### The icon catalog — one source, one generated index
@@ -84,7 +86,8 @@ mismatch between the two is tracked as KI-01.
 
 `assets/icon_names.txt.gz` is the other half — every name draw.io ships, about
 11,500 of them, extracted from a draw.io Desktop `app.asar` by
-`list_icons.py --refresh`. `UNKNOWN_ICON` checks against it, which is what turns
+`list_icons.py --refresh`, which writes only inside a git checkout. `UNKNOWN_ICON` checks
+against it, which is what turns
 a mistyped stencil (draw.io renders those as an empty shape and reports nothing)
 into a warning with a did-you-mean. The file is written with `mtime=0`, so an
 unchanged refresh leaves it byte-identical instead of writing a fresh binary
@@ -93,22 +96,22 @@ blob.
 Only `--verify`, `--refresh` and `--dump-names` need draw.io installed. Building
 and validating a diagram never does.
 
-### Distribution — the archive and the renders
+### Distribution — the plugin and the renders
 
-`scripts/package_skill.py` writes `../drawio.skill`, beside the skill folder so
-the archive never contains a stale copy of itself. It excludes hidden entries by
-rule rather than by name, plus `renders/`, `docs/` and `__pycache__`. What
-remains is what a user installs.
+`.claude-plugin/plugin.json` names the plugin and carries the one version; `marketplace.json`
+lists it with `source: "./"`, so the whole repository is the plugin. A claude.ai account that
+adds the marketplace installs it and updates it when the version changes. The skill names its
+bundled files from its own folder (`${CLAUDE_SKILL_DIR}`), so it works wherever the plugin is
+installed.
 
-`renders/` is committed and reviewed at the end of a phase.
-[AGENTS.md](../AGENTS.md) records why it is kept in the repo and out of the
-archive.
+`renders/` is committed and reviewed at the end of a phase; [AGENTS.md](../AGENTS.md) records
+why.
 
 ## What runs where
 
 | Piece | Needs |
 | ------- | ------- |
-| A generator, `validate.py`, `list_icons.py --search`, `package_skill.py` | Python 3.10+, stdlib only |
+| A generator, `validate.py`, `list_icons.py --search` | Python 3.10+, stdlib only |
 | `preview.py` | matplotlib |
 | `render_png.py`, `render_examples.py` | draw.io Desktop CLI on `PATH`, or the macOS app bundle at `/Applications/draw.io.app` |
 | `list_icons.py --verify` / `--refresh` / `--dump-names` | draw.io Desktop **installed** — it reads `app.asar` from the app bundle directly (override with `$DRAWIO_APP`), and never touches `PATH` |
@@ -127,8 +130,9 @@ point-anchored edges, and entering a container from above — plus
 `build_text_overlap_inside`, which asserts the container exemption stayed narrow.
 
 `test_render_png.py` fakes `subprocess.run` at the system boundary, so the real
-`render()` path runs without the draw.io CLI installed. `test_package_skill.py`
-asserts the shape of the archive, not the mechanics of zipping.
+`render()` path runs without the draw.io CLI installed. `test_plugin.py` checks the manifests
+with `claude plugin validate`, the one version source, and that SKILL.md names its bundled
+files from the skill's own folder.
 `test_three_tier_example_validates_clean` builds the bundled example end to end.
 
 ## Known limits of the approach
@@ -136,5 +140,5 @@ asserts the shape of the archive, not the mechanics of zipping.
 The validator is a 2D geometric check. It says nothing about colour, contrast,
 wording, or whether a managed service was drawn inside the wrong trust boundary,
 and it cannot see whether a label that technically fits looks cramped.
-[SKILL.md](../SKILL.md) lists the blind spots in full under "Limitations". That
+[SKILL.md](../skills/create-diagram/SKILL.md) lists the blind spots in full under "Limitations". That
 is why rendering the PNG and looking at it is a step of the loop.

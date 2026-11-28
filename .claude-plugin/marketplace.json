@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "drawio",
+  "description": "The drawio plugin: architecture diagrams as draw.io XML.",
+  "owner": {
+    "name": "Rahul Ragunathan"
+  },
+  "plugins": [
+    {
+      "name": "drawio",
+      "description": "Architecture diagrams as draw.io XML with deterministic routing and a geometric validator.",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}

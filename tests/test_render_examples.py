@@ -1,4 +1,4 @@
-"""Tests for scripts/render_examples.py.
+"""Tests for tools/render_examples.py.
 
 The rendering itself needs draw.io, so what is pinned here is the contract
 around it: the tool must say plainly when it cannot run, and must refuse to
@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 
 
-SKILL_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent
+SKILL_ROOT = REPO_ROOT / "skills" / "create-diagram"
+sys.path.insert(0, str(REPO_ROOT / "tools"))
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import render_examples  # noqa: E402

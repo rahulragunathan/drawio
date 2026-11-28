@@ -14,7 +14,7 @@ approximations of draw.io's. Trust it for layout (box positions, edge
 routes, label anchors); open the .drawio in draw.io for final fidelity.
 
 Usage:
-    python scripts/preview.py <file.drawio> [out.png]
+    python "${CLAUDE_SKILL_DIR}/scripts/preview.py" <file.drawio> [out.png]
 
 Requires: matplotlib (pip install matplotlib).
 """

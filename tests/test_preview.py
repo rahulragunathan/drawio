@@ -1,4 +1,4 @@
-"""Tests for scripts/preview.py.
+"""Tests for skills/create-diagram/scripts/preview.py.
 
 The preview is a layout check. Anything that makes it abort costs more than a
 mis-drawn colour, so the colour path is the part worth pinning.
@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 
 
-SKILL_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent
+SKILL_ROOT = REPO_ROOT / "skills" / "create-diagram"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 pytest.importorskip(

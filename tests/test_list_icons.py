@@ -1,4 +1,4 @@
-"""Tests for scripts/list_icons.py.
+"""Tests for skills/create-diagram/scripts/list_icons.py.
 
 The asar reader is exercised against a synthetic archive built in tmp_path,
 not against the 147 MB draw.io bundle: the format is what needs pinning down,
@@ -13,7 +13,8 @@ import sys
 from pathlib import Path
 
 
-SKILL_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent
+SKILL_ROOT = REPO_ROOT / "skills" / "create-diagram"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 import list_icons  # noqa: E402
@@ -155,3 +156,36 @@ def test_a_flag_missing_its_value_reports_usage(capsys):
 
     assert code == 2
     assert "--search" in capsys.readouterr().out
+
+
+def test_refresh_refuses_to_write_outside_a_checkout(tmp_path, capsys, monkeypatch):
+    # Fails if --refresh writes the name list into an installed copy (no git
+    # checkout above it), which the next plugin sync would replace anyway.
+    installed = tmp_path / "plugins" / "cache" / "assets" / "icon_names.txt.gz"
+    monkeypatch.setattr(list_icons, "NAMES_FILE", installed)
+    monkeypatch.setenv("DRAWIO_APP", str(tmp_path / "nowhere"))
+
+    code = list_icons.main(["--refresh"])
+
+    out = capsys.readouterr()
+    assert code == 1
+    assert "checkout" in (out.out + out.err)
+    assert not installed.exists()
+
+
+def test_refresh_refuses_an_installed_copy_inside_a_checkout(
+    tmp_path, capsys, monkeypatch
+):
+    # Fails if a plugin cache under a home folder that is itself a git checkout
+    # (dotfiles) passes the checkout guard, so --refresh writes into the copy.
+    (tmp_path / ".git").mkdir()
+    installed = (
+        tmp_path / ".claude" / "plugins" / "cache" / "drawio" / "assets" / "names.gz"
+    )
+    monkeypatch.setattr(list_icons, "NAMES_FILE", installed)
+    monkeypatch.setenv("DRAWIO_APP", str(tmp_path / "nowhere"))
+
+    code = list_icons.main(["--refresh"])
+
+    assert code == 1
+    assert not installed.exists()
