@@ -377,7 +377,7 @@ renders = box(
     fill=COLOR_DIST,
     bold=False,
 )
-packager = box(
+manifest = box(
     1240,
     150,
     210,
@@ -386,7 +386,7 @@ packager = box(
     fill=COLOR_DIST,
     bold=False,
 )
-archive = box(
+marketplace = box(
     1240,
     290,
     210,
@@ -502,7 +502,7 @@ edge(
     entryY=1,
     waypoints=[(735, 505), (1085, 505)],
 )
-edge(packager, archive, color=COLOR_DIST, label="Versions")
+edge(manifest, marketplace, color=COLOR_DIST, label="Versions")
 
 # x=410 channel — the catalog is read while authoring. Vertical entry through
 # the band's title is what TEXT_OVERLAP exempts.

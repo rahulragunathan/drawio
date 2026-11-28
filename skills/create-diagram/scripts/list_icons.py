@@ -333,8 +333,16 @@ def app_version(asar: Path) -> str:
 
 
 def in_checkout(path: Path) -> bool:
-    """True when a git checkout (a .git folder or file) sits above path."""
-    return any((parent / ".git").exists() for parent in path.resolve().parents)
+    """True when path is in a git checkout and not in an installed plugin copy.
+
+    A home folder kept as a git repository puts a .git above the plugin cache
+    too, so a path under .claude/plugins is never a checkout.
+    """
+    resolved = path.resolve()
+    parts = resolved.parts
+    if any(parts[i : i + 2] == (".claude", "plugins") for i in range(len(parts))):
+        return False
+    return any((parent / ".git").exists() for parent in resolved.parents)
 
 
 def load_names() -> set[str]:

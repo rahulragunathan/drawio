@@ -171,3 +171,21 @@ def test_refresh_refuses_to_write_outside_a_checkout(tmp_path, capsys, monkeypat
     assert code == 1
     assert "checkout" in (out.out + out.err)
     assert not installed.exists()
+
+
+def test_refresh_refuses_an_installed_copy_inside_a_checkout(
+    tmp_path, capsys, monkeypatch
+):
+    # Fails if a plugin cache under a home folder that is itself a git checkout
+    # (dotfiles) passes the checkout guard, so --refresh writes into the copy.
+    (tmp_path / ".git").mkdir()
+    installed = (
+        tmp_path / ".claude" / "plugins" / "cache" / "drawio" / "assets" / "names.gz"
+    )
+    monkeypatch.setattr(list_icons, "NAMES_FILE", installed)
+    monkeypatch.setenv("DRAWIO_APP", str(tmp_path / "nowhere"))
+
+    code = list_icons.main(["--refresh"])
+
+    assert code == 1
+    assert not installed.exists()
