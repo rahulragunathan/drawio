@@ -31,7 +31,7 @@ report clean on a diagram it never examined, so they lead the queue.
 
 ### Phases
 
-No phase is in flight. Next is KI-02 through KI-05, bundled as the two file-reading defects
+The phase in flight is in [PHASE_RECORD.md](PHASE_RECORD.md). After it, next is KI-02 through KI-05, bundled as the two file-reading defects
 and then the three label-reading ones.
 
 ## Known Issues
