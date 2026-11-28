@@ -6,7 +6,7 @@ string.
 
 **Swap the first hyphen for a colon.** The tables key rows as `aws-lambda`; the
 helpers take `aws:lambda`. Passing the table form raises `KeyError`. The two
-spellings are tracked as KI-01 in [../docs/KNOWN_ISSUES.md](../docs/KNOWN_ISSUES.md).
+spellings are tracked as KI-01 in the repository's [docs/KNOWN_ISSUES.md](../../../docs/KNOWN_ISSUES.md).
 
 ```python
 icon_box(40, 80, 220, 60, "Order Handler", fill=..., icon="aws:lambda")
