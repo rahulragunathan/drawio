@@ -252,7 +252,7 @@ label's text and position out of the shapes draw.io actually writes.
 ## KI-01 — The icon catalog publishes keys the generator helpers reject
 
 **Severity:** Medium
-**Where:** [references/icons.md](../skills/create-diagram/references/icons.md) · [scripts/list_icons.py:253-256](../skills/create-diagram/scripts/list_icons.py#L253-L256) · [assets/build_template.py:404-405](../skills/create-diagram/assets/build_template.py#L404-L405)
+**Where:** [references/icons.md](../skills/create-diagram/references/icons.md) · [scripts/list_icons.py:253-256](../skills/create-diagram/scripts/list_icons.py#L253-L256) · [assets/build_template.py:405-406](../skills/create-diagram/assets/build_template.py#L405-L406)
 
 ### What happens
 
@@ -471,6 +471,64 @@ Bundle with [KI-05](#ki-05) and [KI-06](#ki-06).
 
 ---
 
+<a id="ki-11"></a>
+
+## KI-11 — Some docs still read as if the skill were a checkout you edit
+
+**Severity:** Medium
+**Where:** [SKILL.md](../skills/create-diagram/SKILL.md) — `Tighten them for denser diagrams`
+
+### What happens
+
+Several texts assume a checkout. SKILL.md tells the reader to tune the validator's constants at the top of the installed `validate.py`, which edits the shared installed copy until the next sync replaces it. The template, example and `preview.py` docstrings name commands as `"${CLAUDE_SKILL_DIR}/scripts/…"`, which Claude Code fills in only inside SKILL.md, so the same text in a shell expands to `/scripts/…`. `build_aws_vpc_pipeline.py` still says `python examples/build_aws_vpc_pipeline.py`. CONTRIBUTING's release step validates `plugin.json` but not `marketplace.json`. AGENTS.md names `assets/build_template.py` with no folder.
+
+### Steps to reproduce
+
+1. Copy the template into a project and run the validate command its docstring gives, in a shell.
+2. Python looks for `/scripts/validate.py`.
+3. It should name a command that runs, or say the path comes from the skill.
+
+### Example scenario
+
+A user follows a docstring or SKILL.md's tuning advice and gets a missing file, or an edit that vanishes on the next sync.
+
+### Notes for a fix
+
+Keep `${CLAUDE_SKILL_DIR}` in SKILL.md only; docstrings say "the create-diagram skill's `scripts/validate.py`" or give checkout paths. Move threshold tuning to CONTRIBUTING (checkout only). Validate both manifests in CONTRIBUTING. Qualify AGENTS.md's paths.
+
+**Source:** gemini-4-neon-high — plugins-from-account phase review pass 1, 2026-11-28
+
+---
+
+<a id="ki-12"></a>
+
+## KI-12 — The refresh guard trusts any .git above the catalog
+
+**Severity:** Medium
+**Where:** [list_icons.py](../skills/create-diagram/scripts/list_icons.py) — `def in_checkout(path: Path) -> bool:`
+
+### What happens
+
+`in_checkout()` accepts any `.git` in any parent folder and excludes only a literal `.claude/plugins`. A plugin folder under a `CLAUDE_CONFIG_DIR` elsewhere in a dotfiles repository, a symlinked plugins folder, or a vendored copy inside another repository all pass, so `--refresh` can write into an installed or vendored copy.
+
+### Steps to reproduce
+
+1. `git init` a fake home; put the skill at `.config/claude/plugins/synced/drawio/skills/create-diagram/` inside it.
+2. Run that copy's `list_icons.py --refresh`.
+3. The guard passes. It should refuse.
+
+### Example scenario
+
+A maintainer with a dotfiles repository and a moved Claude config folder refreshes the catalog into the installed plugin.
+
+### Notes for a fix
+
+Require the drawio repository's own root: `.git` and `.claude-plugin/plugin.json` at the folder three levels above `assets/`, rather than any ancestor.
+
+**Source:** gemini-4-neon-high — plugins-from-account phase review pass 1, 2026-11-28
+
+---
+
 <a id="ki-09"></a>
 
 ## KI-09 — Icon name matching is case-insensitive for image paths, which are not
@@ -553,3 +611,32 @@ The parameterised cases in `tests/test_validate.py` cover the four exact
 spellings today; extend them with the attribute and uppercase variants.
 
 **Source:** gpt-5.6-sol — repo review, 1.4.0
+
+---
+
+<a id="ki-13"></a>
+
+## KI-13 — The plugin and refresh tests miss some ways to break what they pin
+
+**Severity:** Low
+**Where:** [test_plugin.py](../tests/test_plugin.py) — `def test_skill_names_no_fixed_install_path():`
+
+### What happens
+
+The bare-path check skips a path after `/`, so `./scripts/validate.py` or an unbraced `$CLAUDE_SKILL_DIR/…` passes. The refresh-guard tests only test refusal: `in_checkout` returning False for every path stays green, and their `not installed.exists()` holds even without the guard, since draw.io is absent.
+
+### Steps to reproduce
+
+1. Change `in_checkout` to `return False`.
+2. Run `pytest tests/test_list_icons.py`.
+3. It passes. A test of a real checkout should fail.
+
+### Example scenario
+
+A guard that refuses every checkout ships with a green suite.
+
+### Notes for a fix
+
+Match every bundled path and require it to follow `${CLAUDE_SKILL_DIR}/`; add a positive checkout test (a `.git` folder and a worktree `.git` file); monkeypatch `_need_asar` so the refusal tests would write if the guard were gone.
+
+**Source:** gemini-4-neon-high — plugins-from-account phase review pass 1, 2026-11-28
